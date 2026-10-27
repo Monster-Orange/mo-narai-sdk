@@ -10,6 +10,9 @@ Generated in mo-narai; never edit them here.
   --schema`), with a drift test in mo-narai. It replaces the hand-written envelope.
 - `verdicts.json`: the property names no answer payload may declare (D4), under `properties` or `patternProperties`,
   at any depth, lower-cased. This file is the list Narai's check reads, `narai/tools/verdicts.json`.
+- `openapi.tools.json`: the tool registry's API (`/api/tools`), generated from its routes (`python -m narai.api.tools
+  --openapi`, with a drift test). The CLI's client is generated from it. 4xx bodies are `{error, message}`, and an
+  upload's refusal adds `reasons`.
 - `scopes.json`: the scopes a developer token (`dev:`, from `narai login`) and a CI token (`tool:`, bound to one tool
   and one environment) may carry. Copied from `narai/tools/scopes.json`.
 

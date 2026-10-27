@@ -50,7 +50,6 @@
       "properties": {
         "url": {
           "description": "the tool's page; its origin is the frame's origin",
-          "format": "uri",
           "maxLength": 500,
           "pattern": "^https://\\S+$",
           "title": "Url",
@@ -121,7 +120,6 @@
       "description": "A page opened in its own tab; `{name}` placeholders are filled from the preset.",
       "properties": {
         "url": {
-          "format": "uri",
           "maxLength": 500,
           "pattern": "^https://\\S+$",
           "title": "Url",
@@ -144,7 +142,6 @@
           "type": "string"
         },
         "url": {
-          "format": "uri",
           "maxLength": 500,
           "pattern": "^https://\\S+$",
           "title": "Url",
@@ -163,7 +160,6 @@
       "description": "A headless tool reached over MCP: it renders or computes, it holds no learner.",
       "properties": {
         "mcp": {
-          "format": "uri",
           "maxLength": 500,
           "pattern": "^https://\\S+$",
           "title": "Mcp",

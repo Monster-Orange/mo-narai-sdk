@@ -3,6 +3,15 @@
   "$id": "https://michinar.ai/schema/tool-envelope/1.json",
   "title": "ToolMessage",
   "description": "Every message between Narai's tool host and a tool (contract v1). A domain-neutral envelope; what a domain needs travels in a typed payload whose schema the manifest declares. No verdict field anywhere: a tool sends what the learner did, Narai judges.",
+  "type": "object",
+  "required": [
+    "type"
+  ],
+  "properties": {
+    "type": {
+      "type": "string"
+    }
+  },
   "$defs": {
     "Answer": {
       "additionalProperties": false,
@@ -466,17 +475,6 @@
     }
   },
   "discriminator": {
-    "mapping": {
-      "narai.tool.command": "#/$defs/Command",
-      "narai.tool.connect": "#/$defs/Connect",
-      "narai.tool.locale": "#/$defs/LocaleSwitch",
-      "narai.tool.start": "#/$defs/Start",
-      "tool.answer": "#/$defs/Answer",
-      "tool.close": "#/$defs/Close",
-      "tool.hello": "#/$defs/Hello",
-      "tool.practice": "#/$defs/Practice",
-      "tool.ready": "#/$defs/Ready"
-    },
     "propertyName": "type"
   },
   "oneOf": [
