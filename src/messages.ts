@@ -11,7 +11,7 @@ export type { Answer, Close, Command, Connect, Hello, LocaleSwitch, Payload, Pra
 /** The contract version this SDK speaks (`v` on every message). */
 export const CONTRACT_VERSION = 1;
 
-/** The most a payload may weigh, serialized (the study's "large answers": an upload reference beyond it, later). */
+/** The most a payload may weigh, serialized (larger answers will travel as an upload reference). */
 export const PAYLOAD_MAX_BYTES = 64 * 1024;
 
 export type Checked = { ok: true; message: ToolMessage } | { ok: false; reason: string };
