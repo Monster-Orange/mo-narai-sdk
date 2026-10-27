@@ -33,6 +33,8 @@ tool.practice("drill", { duration_s: 30, attempts: 4, payload: { schema: "echo.d
 tool.close("done");
 ```
 
+### The wire
+
 The handshake: the tool says `tool.hello` to its parent once it's listening; Narai's host answers on the window with
 `narai.tool.connect` and a `MessagePort`, from a listed origin only; every later message travels on the port. Both sides
 check every message against the envelope (`schema/envelope.schema.json`) and the manifest, and refuse what it doesn't
@@ -57,7 +59,8 @@ would. `narai dev` runs it.
 ## Schemas
 
 `schema/manifest.schema.json` and `schema/scopes.json` are generated in mo-narai (see `schema/README.md`); never edit
-them here. `schema/envelope.schema.json`, the wire envelope, is this repository's. `npm run generate` writes
+them here. `schema/envelope.schema.json`, the wire envelope, is here until the server generates it like the manifest
+(then it, and the verdict words in `src/verdicts.ts`, come from mo-narai too). `npm run generate` writes
 `src/generated/` (types and precompiled validators) from them; a test fails when it's stale.
 
 ## Develop
