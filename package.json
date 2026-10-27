@@ -32,7 +32,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
-    "generate": "node scripts/generate.mjs"
+    "generate": "node scripts/generate.mjs",
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
