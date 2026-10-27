@@ -20,10 +20,22 @@ const SCHEMAS = {
 const read = (file) => JSON.parse(readFileSync(join(ROOT, "schema", file), "utf8"));
 
 /** The schema without its prose: the validators don't need it, and it is most of their size. */
+// What the validators leave out: prose; `format` (every URL also has its `^https://` pattern, which is what's held;
+// a format would need ajv-formats in the shipped code); and the discriminator's `mapping`, which Ajv derives from each
+// branch's `const` and refuses to be given.
 function bare(node) {
   if (Array.isArray(node)) return node.map(bare);
   if (node === null || typeof node !== "object") return node;
-  return Object.fromEntries(Object.entries(node).filter(([k]) => k !== "description" && k !== "title" || false).map(([k, v]) => [k, bare(v)]));
+  const kept = Object.entries(node).filter(([k]) => !["description", "title", "format"].includes(k));
+  const out = Object.fromEntries(kept.map(([k, v]) => [k, k === "discriminator" ? { propertyName: v.propertyName } : bare(v)]));
+  return out;
+}
+
+// Ajv's discriminator (one branch checked, by `type`, so an error names that message's fields) needs the root to say
+// it's an object with a string `type`; the server's schema says so in each branch.
+function forAjv(schema) {
+  if (!schema.discriminator) return schema;
+  return { ...schema, type: "object", required: ["type"], properties: { type: { type: "string" } } };
 }
 
 // Ajv's standalone code reaches for two runtime helpers with require(), which an ES module in a browser can't do:
@@ -73,7 +85,7 @@ export async function generate() {
   const ajv = new Ajv2020({ code: { source: true, esm: true, lines: false }, discriminator: true, strict: true, allErrors: true });
   const ids = {};
   for (const { file, validator } of Object.values(SCHEMAS)) {
-    const schema = bare(read(file));
+    const schema = forAjv(bare(read(file)));
     ajv.addSchema(schema);
     ids[validator] = schema.$id;
   }
@@ -82,6 +94,10 @@ export async function generate() {
   code = code.replace(/require\("ajv\/dist\/runtime\/equal"\)\.default/g, "equal").replace(/require\("ajv\/dist\/runtime\/ucs2length"\)\.default/g, "ucs2length");
   if (/require\(/.test(code)) throw new Error("the standalone validators still require() something: " + code.match(/require\([^)]*\)/)[0]);
   code = code.replace(/^"use strict";/, "");
+  const verdicts = read("verdicts.json").fields;
+  files["verdicts.ts"] = `${BANNER}/** The property names no answer payload may carry (schema/verdicts.json, the list Narai's registry reads). */
+export const VERDICT_FIELDS: readonly string[] = ${JSON.stringify(verdicts)};
+`;
   files["validators.js"] = `${BANNER}/* eslint-disable */\n${HELPERS}\n${code}\n`;
   files["validators.d.ts"] = `${BANNER}export interface ValidationError { instancePath: string; schemaPath: string; keyword: string; params: Record<string, unknown>; message?: string }
 export interface Validator { (data: unknown): boolean; errors?: ValidationError[] | null }

@@ -87,6 +87,9 @@ export interface Surfaces {
  * via the `definition` "Embed".
  */
 export interface Embed {
+  /**
+   * the tool's page; its origin is the frame's origin
+   */
   url: string;
   sdk: string;
 }

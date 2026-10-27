@@ -4,42 +4,46 @@
  * Every message between Narai's tool host and a tool (contract v1). A domain-neutral envelope; what a domain needs travels in a typed payload whose schema the manifest declares. No verdict field anywhere: a tool sends what the learner did, Narai judges.
  */
 export type ToolMessage = Hello | Connect | Start | Command | LocaleSwitch | Ready | Answer | Practice | Close;
-/**
- * The contract version.
- */
-export type Version = 1;
-/**
- * Opaque, single use, expires. It stands in for the learner, who is never named.
- */
-export type LaunchId = string;
-export type LocaleTag = string;
 
 /**
- * Tool → its parent window, once its SDK is listening: the host answers with the connect. A tool that loads late misses nothing.
+ * Tool -> its parent window, once its SDK is listening: the host answers with the connect.
  */
 export interface Hello {
   type: "tool.hello";
-  v: Version;
+  /**
+   * The contract version.
+   */
+  v: 1;
 }
 /**
- * Narai → tool, on the window, in answer to its hello: the MessagePort every later message travels on.
+ * Narai -> tool, on the window, in answer to its hello (that frame, at the embed origin only): the MessagePort
+ * every later message travels on.
  */
 export interface Connect {
   type: "narai.tool.connect";
-  v: Version;
+  /**
+   * The contract version.
+   */
+  v: 1;
 }
 export interface Start {
   type: "narai.tool.start";
-  v: Version;
-  launch: LaunchId;
-  locale: LocaleTag;
+  /**
+   * The contract version.
+   */
+  v: 1;
+  /**
+   * Opaque, single use, expires. It stands in for the learner.
+   */
+  launch: string;
+  locale: string;
   /**
    * Best first; the tool renders the first it has.
    */
-  fallback: LocaleTag[];
-  conventions?: Payload;
-  preset?: Payload;
-  task?: Task;
+  fallback: string[];
+  conventions?: Payload | null;
+  preset?: Payload | null;
+  task?: Task | null;
 }
 /**
  * A typed payload: `schema` names one the manifest declares for this message; the rest is that schema's.
@@ -49,7 +53,8 @@ export interface Payload {
   [k: string]: unknown;
 }
 /**
- * An item Narai judges itself. The prompt is already in the learner's language; the tool shows it, never writes one.
+ * An item Narai judges itself. The prompt is already in the learner's language; the tool shows it, never writes
+ * one.
  */
 export interface Task {
   id: string;
@@ -62,56 +67,86 @@ export interface Task {
    */
   assist: "none" | "allowed";
   prompt: string;
-  payload?: Payload;
+  payload?: Payload | null;
 }
 /**
- * Narai → tool, when the Tutor acts: only commands the manifest lists.
+ * Narai -> tool, when the Tutor acts: only commands the manifest lists.
  */
 export interface Command {
   type: "narai.tool.command";
-  v: Version;
-  launch: LaunchId;
+  /**
+   * The contract version.
+   */
+  v: 1;
+  /**
+   * Opaque, single use, expires. It stands in for the learner.
+   */
+  launch: string;
   command: string;
   payload: Payload;
 }
 /**
- * Narai → tool, when the learner switches language mid-session.
+ * Narai -> tool, when the learner switches language mid-session.
  */
 export interface LocaleSwitch {
   type: "narai.tool.locale";
-  v: Version;
-  launch: LaunchId;
-  locale: LocaleTag;
-  fallback: LocaleTag[];
+  /**
+   * The contract version.
+   */
+  v: 1;
+  /**
+   * Opaque, single use, expires. It stands in for the learner.
+   */
+  launch: string;
+  locale: string;
+  fallback: string[];
 }
 /**
- * Tool → Narai: started, in the locale it actually rendered (the host flags a fallback).
+ * Tool -> Narai: started, in the locale it actually rendered (the host flags a fallback).
  */
 export interface Ready {
   type: "tool.ready";
-  v: Version;
-  launch: LaunchId;
+  /**
+   * The contract version.
+   */
+  v: 1;
+  /**
+   * Opaque, single use, expires. It stands in for the learner.
+   */
+  launch: string;
   tool: string;
   version: string;
-  locale: LocaleTag;
+  locale: string;
 }
 /**
- * Tool → Narai: what the learner did on a task. Raw; Narai judges.
+ * Tool -> Narai: what the learner did on a task. Raw; Narai judges.
  */
 export interface Answer {
   type: "tool.answer";
-  v: Version;
-  launch: LaunchId;
+  /**
+   * The contract version.
+   */
+  v: 1;
+  /**
+   * Opaque, single use, expires. It stands in for the learner.
+   */
+  launch: string;
   task: string;
   payload: Payload;
 }
 /**
- * Tool → Narai: practice outside a task. Moves memory, never mastery.
+ * Tool -> Narai: practice outside a task. Moves memory, never mastery.
  */
 export interface Practice {
   type: "tool.practice";
-  v: Version;
-  launch: LaunchId;
+  /**
+   * The contract version.
+   */
+  v: 1;
+  /**
+   * Opaque, single use, expires. It stands in for the learner.
+   */
+  launch: string;
   activity: string;
   duration_s: number;
   attempts: number;
@@ -119,7 +154,13 @@ export interface Practice {
 }
 export interface Close {
   type: "tool.close";
-  v: Version;
-  launch: LaunchId;
+  /**
+   * The contract version.
+   */
+  v: 1;
+  /**
+   * Opaque, single use, expires. It stands in for the learner.
+   */
+  launch: string;
   reason: "done" | "user" | "error";
 }

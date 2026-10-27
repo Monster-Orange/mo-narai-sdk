@@ -95,7 +95,7 @@ export function session(
   // a command that arrives before the tool hands it a handler waits for one
   const held: Command[] = [];
   let onLocale: ((message: LocaleSwitch) => void) | undefined;
-  const channel = new Channel(port, manifest, "tool", () => ({ launch: start?.launch, task: start?.task, payloads: options.payloads }), refused);
+  const channel = new Channel(port, manifest, "tool", () => ({ launch: start?.launch, task: start?.task ?? undefined, payloads: options.payloads }), refused);
   return new Promise((resolve) => {
     channel.listen((message: ToolMessage) => {
       if (!start) {
@@ -119,7 +119,7 @@ export function session(
     return {
       launch: s.launch,
       start: s,
-      task: s.task,
+      task: s.task ?? undefined,
       ready: (locale) => channel.send({ ...base, type: "tool.ready", tool: manifest.id, version: manifest.version, locale }),
       answer: (payload) => {
         if (!s.task) throw new Error("this launch has no task to answer");
