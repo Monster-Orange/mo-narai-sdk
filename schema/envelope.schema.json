@@ -1,0 +1,511 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://michinar.ai/schema/tool-envelope/1.json",
+  "title": "ToolMessage",
+  "description": "Every message between Narai's tool host and a tool (contract v1). A domain-neutral envelope; what a domain needs travels in a typed payload whose schema the manifest declares. No verdict field anywhere: a tool sends what the learner did, Narai judges.",
+  "$defs": {
+    "Answer": {
+      "additionalProperties": false,
+      "description": "Tool -> Narai: what the learner did on a task. Raw; Narai judges.",
+      "properties": {
+        "type": {
+          "const": "tool.answer",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        },
+        "launch": {
+          "description": "Opaque, single use, expires. It stands in for the learner.",
+          "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+          "title": "Launch",
+          "type": "string"
+        },
+        "task": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Task",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/Payload"
+        }
+      },
+      "required": [
+        "type",
+        "v",
+        "launch",
+        "task",
+        "payload"
+      ],
+      "title": "Answer",
+      "type": "object"
+    },
+    "Close": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "tool.close",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        },
+        "launch": {
+          "description": "Opaque, single use, expires. It stands in for the learner.",
+          "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+          "title": "Launch",
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "done",
+            "user",
+            "error"
+          ],
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "v",
+        "launch",
+        "reason"
+      ],
+      "title": "Close",
+      "type": "object"
+    },
+    "Command": {
+      "additionalProperties": false,
+      "description": "Narai -> tool, when the Tutor acts: only commands the manifest lists.",
+      "properties": {
+        "type": {
+          "const": "narai.tool.command",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        },
+        "launch": {
+          "description": "Opaque, single use, expires. It stands in for the learner.",
+          "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+          "title": "Launch",
+          "type": "string"
+        },
+        "command": {
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_-]*)*$",
+          "title": "Command",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/Payload"
+        }
+      },
+      "required": [
+        "type",
+        "v",
+        "launch",
+        "command",
+        "payload"
+      ],
+      "title": "Command",
+      "type": "object"
+    },
+    "Connect": {
+      "additionalProperties": false,
+      "description": "Narai -> tool, on the window, in answer to its hello (that frame, at the embed origin only): the MessagePort\nevery later message travels on.",
+      "properties": {
+        "type": {
+          "const": "narai.tool.connect",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "v"
+      ],
+      "title": "Connect",
+      "type": "object"
+    },
+    "Hello": {
+      "additionalProperties": false,
+      "description": "Tool -> its parent window, once its SDK is listening: the host answers with the connect.",
+      "properties": {
+        "type": {
+          "const": "tool.hello",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "v"
+      ],
+      "title": "Hello",
+      "type": "object"
+    },
+    "LocaleSwitch": {
+      "additionalProperties": false,
+      "description": "Narai -> tool, when the learner switches language mid-session.",
+      "properties": {
+        "type": {
+          "const": "narai.tool.locale",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        },
+        "launch": {
+          "description": "Opaque, single use, expires. It stands in for the learner.",
+          "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+          "title": "Launch",
+          "type": "string"
+        },
+        "locale": {
+          "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+          "title": "Locale",
+          "type": "string"
+        },
+        "fallback": {
+          "items": {
+            "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+            "type": "string"
+          },
+          "title": "Fallback",
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "v",
+        "launch",
+        "locale",
+        "fallback"
+      ],
+      "title": "LocaleSwitch",
+      "type": "object"
+    },
+    "Payload": {
+      "additionalProperties": true,
+      "description": "A typed payload: `schema` names one the manifest declares for this message; the rest is that schema's.",
+      "properties": {
+        "schema": {
+          "pattern": "^[a-z][a-z0-9-]*(?:\\.[a-z][a-z0-9-]*)+@[1-9]\\d*$",
+          "title": "Schema",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema"
+      ],
+      "title": "Payload",
+      "type": "object"
+    },
+    "Practice": {
+      "additionalProperties": false,
+      "description": "Tool -> Narai: practice outside a task. Moves memory, never mastery.",
+      "properties": {
+        "type": {
+          "const": "tool.practice",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        },
+        "launch": {
+          "description": "Opaque, single use, expires. It stands in for the learner.",
+          "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+          "title": "Launch",
+          "type": "string"
+        },
+        "activity": {
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_-]*)*$",
+          "title": "Activity",
+          "type": "string"
+        },
+        "duration_s": {
+          "maximum": 86400,
+          "minimum": 0,
+          "title": "Duration S",
+          "type": "number"
+        },
+        "attempts": {
+          "maximum": 100000,
+          "minimum": 0,
+          "title": "Attempts",
+          "type": "integer"
+        },
+        "payload": {
+          "$ref": "#/$defs/Payload"
+        }
+      },
+      "required": [
+        "type",
+        "v",
+        "launch",
+        "activity",
+        "duration_s",
+        "attempts",
+        "payload"
+      ],
+      "title": "Practice",
+      "type": "object"
+    },
+    "Ready": {
+      "additionalProperties": false,
+      "description": "Tool -> Narai: started, in the locale it actually rendered (the host flags a fallback).",
+      "properties": {
+        "type": {
+          "const": "tool.ready",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        },
+        "launch": {
+          "description": "Opaque, single use, expires. It stands in for the learner.",
+          "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+          "title": "Launch",
+          "type": "string"
+        },
+        "tool": {
+          "title": "Tool",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        },
+        "locale": {
+          "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+          "title": "Locale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "v",
+        "launch",
+        "tool",
+        "version",
+        "locale"
+      ],
+      "title": "Ready",
+      "type": "object"
+    },
+    "Start": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "narai.tool.start",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        },
+        "launch": {
+          "description": "Opaque, single use, expires. It stands in for the learner.",
+          "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+          "title": "Launch",
+          "type": "string"
+        },
+        "locale": {
+          "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+          "title": "Locale",
+          "type": "string"
+        },
+        "fallback": {
+          "description": "Best first; the tool renders the first it has.",
+          "items": {
+            "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+            "type": "string"
+          },
+          "title": "Fallback",
+          "type": "array"
+        },
+        "conventions": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Payload"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "preset": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Payload"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "task": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Task"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type",
+        "v",
+        "launch",
+        "locale",
+        "fallback"
+      ],
+      "title": "Start",
+      "type": "object"
+    },
+    "Task": {
+      "additionalProperties": false,
+      "description": "An item Narai judges itself. The prompt is already in the learner's language; the tool shows it, never writes\none.",
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "description": "a key of the manifest's answers",
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Kind",
+          "type": "string"
+        },
+        "assist": {
+          "description": "`none`: the tool hides its own checks for this task.",
+          "enum": [
+            "none",
+            "allowed"
+          ],
+          "title": "Assist",
+          "type": "string"
+        },
+        "prompt": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Prompt",
+          "type": "string"
+        },
+        "payload": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Payload"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "assist",
+        "prompt"
+      ],
+      "title": "Task",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "narai.tool.command": "#/$defs/Command",
+      "narai.tool.connect": "#/$defs/Connect",
+      "narai.tool.locale": "#/$defs/LocaleSwitch",
+      "narai.tool.start": "#/$defs/Start",
+      "tool.answer": "#/$defs/Answer",
+      "tool.close": "#/$defs/Close",
+      "tool.hello": "#/$defs/Hello",
+      "tool.practice": "#/$defs/Practice",
+      "tool.ready": "#/$defs/Ready"
+    },
+    "propertyName": "type"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Hello"
+    },
+    {
+      "$ref": "#/$defs/Connect"
+    },
+    {
+      "$ref": "#/$defs/Start"
+    },
+    {
+      "$ref": "#/$defs/Command"
+    },
+    {
+      "$ref": "#/$defs/LocaleSwitch"
+    },
+    {
+      "$ref": "#/$defs/Ready"
+    },
+    {
+      "$ref": "#/$defs/Answer"
+    },
+    {
+      "$ref": "#/$defs/Practice"
+    },
+    {
+      "$ref": "#/$defs/Close"
+    }
+  ]
+}
