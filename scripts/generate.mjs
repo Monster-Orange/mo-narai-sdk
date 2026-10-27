@@ -20,22 +20,12 @@ const SCHEMAS = {
 const read = (file) => JSON.parse(readFileSync(join(ROOT, "schema", file), "utf8"));
 
 /** The schema without its prose: the validators don't need it, and it is most of their size. */
-// What the validators leave out: prose; `format` (every URL also has its `^https://` pattern, which is what's held;
-// a format would need ajv-formats in the shipped code); and the discriminator's `mapping`, which Ajv derives from each
-// branch's `const` and refuses to be given.
+// What the validators leave out: prose (the schemas compile as the server writes them; it fixed the three things Ajv
+// refused at the source, mo-narai-sdk#11).
 function bare(node) {
   if (Array.isArray(node)) return node.map(bare);
   if (node === null || typeof node !== "object") return node;
-  const kept = Object.entries(node).filter(([k]) => !["description", "title", "format"].includes(k));
-  const out = Object.fromEntries(kept.map(([k, v]) => [k, k === "discriminator" ? { propertyName: v.propertyName } : bare(v)]));
-  return out;
-}
-
-// Ajv's discriminator (one branch checked, by `type`, so an error names that message's fields) needs the root to say
-// it's an object with a string `type`; the server's schema says so in each branch.
-function forAjv(schema) {
-  if (!schema.discriminator) return schema;
-  return { ...schema, type: "object", required: ["type"], properties: { type: { type: "string" } } };
+  return Object.fromEntries(Object.entries(node).filter(([k]) => k !== "description" && k !== "title").map(([k, v]) => [k, bare(v)]));
 }
 
 // Ajv's standalone code reaches for two runtime helpers with require(), which an ES module in a browser can't do:
@@ -85,7 +75,7 @@ export async function generate() {
   const ajv = new Ajv2020({ code: { source: true, esm: true, lines: false }, discriminator: true, strict: true, allErrors: true });
   const ids = {};
   for (const { file, validator } of Object.values(SCHEMAS)) {
-    const schema = forAjv(bare(read(file)));
+    const schema = bare(read(file));
     ajv.addSchema(schema);
     ids[validator] = schema.$id;
   }
