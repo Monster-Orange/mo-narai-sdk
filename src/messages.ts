@@ -24,7 +24,7 @@ export interface CheckContext {
   /** The task the host started the tool on, if any: an answer is for it, in its kind's payload. */
   task?: Pick<Task, "id" | "kind"> | undefined;
   /** Checks a payload's body against the JSON Schema the manifest declares for it (`payloads[ref]`); the reason it
-   *  fails, or null. Narai's host always checks; a tool may (`@narai/sdk/payloads` compiles them, where eval is allowed). */
+   *  fails, or null. Narai's host always checks; a tool may (`@michinarai/sdk/payloads` compiles them, where eval is allowed). */
   payloads?: PayloadCheck | undefined;
 }
 

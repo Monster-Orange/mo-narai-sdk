@@ -1,43 +1,36 @@
-# Publishes this package to npm, with provenance, and attaches the exact tarball and its checksums to a GitHub release.
-# Only the npm tarball ships: no raw binaries. Runs on a version tag (v1.2.3, equal to package.json's version), or by
-# hand (workflow_dispatch), which is a dry run unless `publish` is ticked.
-#
-# The npm scope is ONE value: the repository variable NPM_SCOPE (Settings › Variables, e.g. `@example`). It isn't
-# chosen yet, so a publish stops until it's set; the package is published as <NPM_SCOPE>/sdk, whatever
-# package.json's name says.
+# Releases @michinarai/sdk (README › Releasing). npm's trusted publishing only: no token anywhere, in CI or out.
+# - A version tag (v1.2.3, equal to package.json's version) packs the tarball, STAGES it on npm (`npm stage publish`,
+#   over OIDC), and makes a GitHub release with the tarball and SHA256SUMS. Nothing is public until Ward approves the
+#   staged version on npm (`npm stage approve`, with 2FA).
+# - By hand (workflow_dispatch): a dry run. The same gates and the same tarball, kept with SHA256SUMS as an artifact:
+#   the one-time first publish of a package (which trusted publishing can't do) is that tarball, from Ward's machine.
+# Only the npm tarball ships: no raw binaries.
 name: release
 
 on:
   push:
     tags: ["v*.*.*"]
   workflow_dispatch:
-    inputs:
-      publish:
-        description: "Publish to npm (unticked: build, test and pack only)"
-        type: boolean
-        default: false
 
 permissions:
-  contents: write # the GitHub release
-  id-token: write # npm provenance
+  contents: read
 
 concurrency:
   group: release
   cancel-in-progress: false
 
 jobs:
-  release:
+  pack:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      NPM_SCOPE: ${{ vars.NPM_SCOPE }}
-      PUBLISH: ${{ github.ref_type == 'tag' || inputs.publish }}
+    outputs:
+      tarball: ${{ steps.pack.outputs.tarball }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
-          registry-url: https://registry.npmjs.org
+          node-version: 22.14.0
           cache: npm
       - run: npm ci
       - name: Chromium, for the harness e2e
@@ -47,42 +40,67 @@ jobs:
           npm run lint
           npm run typecheck
           npm test
-      - name: The version is the tag's
+      - name: The version is the tag's, the name is the scope's
         id: version
+        env:
+          NPM_SCOPE: ${{ vars.NPM_SCOPE }}
         run: |
           version=$(node -p 'require("./package.json").version')
+          name=$(node -p 'require("./package.json").name')
           echo "version=$version" >> "$GITHUB_OUTPUT"
           if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "v$version" ]; then
             echo "::error::tag $GITHUB_REF_NAME, but package.json says $version"; exit 1
           fi
-      - name: The npm name, from NPM_SCOPE
-        run: |
-          if [ -z "$NPM_SCOPE" ]; then
-            if [ "$PUBLISH" = true ]; then echo "::error::no npm scope chosen: set the repository variable NPM_SCOPE"; exit 1; fi
-            echo "NPM_SCOPE unset: a dry run packs under package.json's name"; exit 0
-          fi
-          case "$NPM_SCOPE" in @[a-z0-9]*) ;; *) echo "::error::NPM_SCOPE must look like @scope"; exit 1;; esac
-          npm pkg set name="$NPM_SCOPE/sdk"
-          node -p 'require("./package.json").name'
+          case "$name" in "$NPM_SCOPE"/*) ;; *) echo "::error::$name isn't under the repository variable NPM_SCOPE ($NPM_SCOPE)"; exit 1;; esac
       - name: Pack, and the checksums
         id: pack
         run: |
           mkdir -p release
           tarball=$(npm pack --pack-destination release --json | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8"))[0].filename)')
           (cd release && sha256sum "$tarball" > SHA256SUMS && cat SHA256SUMS)
-          echo "tarball=release/$tarball" >> "$GITHUB_OUTPUT"
-      - name: Publish to npm, with provenance
-        if: env.PUBLISH == 'true'
-        run: npm publish "${{ steps.pack.outputs.tarball }}" --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          echo "tarball=$tarball" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release
+          path: release/
+          if-no-files-found: error
+
+  stage:
+    if: github.ref_type == 'tag'
+    needs: pack
+    runs-on: ubuntu-latest # trusted publishing takes GitHub-hosted runners only
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write # the OIDC token npm trusts, instead of any npm token
+    steps:
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.14.0
+          registry-url: https://registry.npmjs.org
+      - name: npm 11.21 (trusted publishing needs 11.5.1 or later)
+        run: npm install -g npm@11.21.0 && npm --version
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: release
+      - name: Check the tarball against its checksum
+        run: cd release && sha256sum -c SHA256SUMS
+      - name: Stage it on npm, for Ward to approve
+        run: npm stage publish "release/${{ needs.pack.outputs.tarball }}" --access public
+
+  github-release:
+    needs: [pack, stage]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # the GitHub release
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: release
       - name: The GitHub release, with the tarball and SHA256SUMS
-        if: env.PUBLISH == 'true'
-        run: |
-          tag="v${{ steps.version.outputs.version }}"
-          gh release create "$tag" "${{ steps.pack.outputs.tarball }}" release/SHA256SUMS --title "$NPM_SCOPE/sdk $tag" --generate-notes --verify-tag
+        run: gh release create "$GITHUB_REF_NAME" "release/${{ needs.pack.outputs.tarball }}" release/SHA256SUMS --repo "$GITHUB_REPOSITORY" --title "@michinarai/sdk $GITHUB_REF_NAME" --generate-notes --verify-tag
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: A dry run, what would ship
-        if: env.PUBLISH != 'true'
-        run: ls -l release && cat release/SHA256SUMS

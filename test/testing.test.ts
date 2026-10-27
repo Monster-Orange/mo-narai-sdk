@@ -3,7 +3,7 @@ import { defineTool, manifestWarnings, type ToolManifest } from "../src/index.js
 import { launch } from "../src/testing.js";
 import { ECHO, TASK, echo } from "./fixtures.js";
 
-describe("@narai/sdk/testing", () => {
+describe("@michinarai/sdk/testing", () => {
   it("launches a tool against Narai's host and records what the host received", async () => {
     const run = await launch(ECHO, { locale: "ja", task: TASK });
     run.tool.ready("ja");

@@ -1,4 +1,4 @@
-# @narai/sdk
+# @michinarai/sdk
 
 Build tools that run inside Narai lessons.
 
@@ -14,12 +14,12 @@ This package gives a tool:
   events, and `narai.tool.command` for the commands the manifest declares, every message checked against it;
 - a local harness that mounts the tool in a sandboxed frame on a separate origin, as Narai does.
 
-The command line (`narai`, in `@narai/cli`) scaffolds, validates, builds and registers tools.
+The command line (`narai`, in `@michinarai/cli`) scaffolds, validates, builds and registers tools.
 
 ## A tool
 
 ```ts
-import { connect, defineTool } from "@narai/sdk";
+import { connect, defineTool } from "@michinarai/sdk";
 
 const manifest = defineTool({ id: "you/echo", version: "0.1.0", sdk: "^1", /* … */ }); // throws a ManifestError, every reason
 // or a manifest kept as JSON: defineTool(json) checks it at runtime and returns a ToolManifest
@@ -53,16 +53,16 @@ the **body only**: the SDK takes `schema` off before checking it, so a schema th
 Narai's host takes a burst of 10 `tool.practice`, then 6 a minute, per launch: batch practice (the excess is refused,
 and counted).
 
-`@narai/sdk/payloads` checks payload bodies against the JSON Schemas the manifest declares (it compiles them, so it's
+`@michinarai/sdk/payloads` checks payload bodies against the JSON Schemas the manifest declares (it compiles them, so it's
 for the host, the harness and the CLI, where eval is allowed).
 
 ## Testing a tool
 
-`@narai/sdk/testing` launches a tool's session against Narai's own host over a real `MessageChannel`, wired as a
+`@michinarai/sdk/testing` launches a tool's session against Narai's own host over a real `MessageChannel`, wired as a
 browser wires the iframe:
 
 ```ts
-import { launch } from "@narai/sdk/testing";
+import { launch } from "@michinarai/sdk/testing";
 
 const run = await launch(manifest, { locale: "ja", task });
 run.tool.ready("ja");
@@ -79,7 +79,7 @@ run.close();
 ## The harness
 
 ```ts
-import { startHarness } from "@narai/sdk/harness";
+import { startHarness } from "@michinarai/sdk/harness";
 
 const harness = await startHarness({ manifest, toolDir: "dist", locale: "ja", task });
 // harness.hostUrl: Narai's host on http://localhost; the tool on http://127.0.0.1 in a sandboxed iframe
@@ -103,3 +103,38 @@ npm test
 npm run lint
 npm run typecheck
 ```
+
+## Releasing
+
+npm's trusted publishing only: no npm token, in CI or anywhere else. The workflow is `.github/workflows/release.yml`.
+
+**Every release.** Set `version` in package.json, merge it, and push the tag `v<version>`. The workflow runs the
+gates, packs the tarball and its `SHA256SUMS`, and **stages** it on npm over OIDC (`npm stage publish`). It also makes
+a GitHub release with both files. Nothing is public until Ward approves it on npm, with 2FA:
+
+```sh
+npm stage list @michinarai/sdk
+npm stage approve <stage-id>
+```
+
+**The first publish of the package, once.** Trusted publishing can't create a package, so Ward publishes the first
+version by hand from his machine:
+
+1. Run the workflow by hand (Actions › release › Run workflow). It's a dry run, and it keeps the tarball and
+   `SHA256SUMS` as the `release` artifact. Download it.
+2. In that folder: `sha256sum -c SHA256SUMS` (on a Mac, `shasum -a 256 -c SHA256SUMS`), then
+   `npm login --auth-type=web && npm publish <tarball> --access public && npm logout`.
+3. On npmjs.com, the package › Settings › Trusted publisher › GitHub Actions: organization `Monster-Orange`, repository
+   `mo-narai-sdk`, workflow `release.yml`, with staged publishing allowed. Or, with npm 11.15 or later:
+   `npm trust github @michinarai/sdk --file release.yml --repo Monster-Orange/mo-narai-sdk --allow-stage-publish`.
+4. The same page › Publishing access: **Require two-factor authentication and disallow tokens**. Trusted publishing
+   still works.
+
+Mind:
+
+- The trusted-publisher fields are case-sensitive, and npm doesn't check them when they're saved. A mismatch fails
+  only at publish time, as an `E404` that looks like a missing package. package.json's `repository.url` must be this
+  repository exactly.
+- A new trusted-publisher configuration must publish (or stage) within 2 days, or it expires.
+- The repository is private, so packages ship **without provenance**. Provenance turns on by itself (no flag) if the
+  repository and the package are both public.
