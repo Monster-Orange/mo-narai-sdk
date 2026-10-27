@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "scopes": [
+    {"name": "dev:tools.read", "resource": "publisher", "description": "List and read your publisher's tools and their versions."},
+    {"name": "dev:tools.write", "resource": "publisher", "description": "Register a tool under your publisher."},
+    {"name": "dev:versions.upload", "resource": "publisher", "description": "Upload a draft version of any of your publisher's tools."},
+    {"name": "dev:launch", "resource": "publisher", "description": "Start a development launch of a draft version."},
+    {"name": "tool:versions.read", "resource": "tool", "description": "Read the versions of the one tool the token is bound to."},
+    {"name": "tool:versions.upload", "resource": "tool", "description": "Upload a draft version of the one tool the token is bound to."}
+  ]
+}

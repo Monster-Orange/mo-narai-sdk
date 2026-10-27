@@ -1,0 +1,370 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://michinar.ai/schema/tool-manifest/1.json",
+  "$defs": {
+    "Capabilities": {
+      "additionalProperties": false,
+      "description": "What the tool's frame may use; anything not listed here is not granted.",
+      "properties": {
+        "audio_out": {
+          "default": false,
+          "title": "Audio Out",
+          "type": "boolean"
+        },
+        "microphone": {
+          "default": false,
+          "title": "Microphone",
+          "type": "boolean"
+        },
+        "network": {
+          "default": "none",
+          "enum": [
+            "none",
+            "declared"
+          ],
+          "title": "Network",
+          "type": "string"
+        }
+      },
+      "title": "Capabilities",
+      "type": "object"
+    },
+    "Device": {
+      "additionalProperties": false,
+      "description": "A physical device paired through the SDK (a MIDI keyboard, a sensor).",
+      "properties": {
+        "kinds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Kinds",
+          "type": "array"
+        }
+      },
+      "title": "Device",
+      "type": "object"
+    },
+    "Embed": {
+      "additionalProperties": false,
+      "description": "A page Narai frames. `sdk: none` is a passive tool: shown, never spoken to.",
+      "properties": {
+        "url": {
+          "title": "Url",
+          "type": "string"
+        },
+        "sdk": {
+          "pattern": "^\\^[1-9]\\d*$|^none$",
+          "title": "Sdk",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url",
+        "sdk"
+      ],
+      "title": "Embed",
+      "type": "object"
+    },
+    "File": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size": {
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path",
+        "sha256",
+        "size"
+      ],
+      "title": "File",
+      "type": "object"
+    },
+    "Import": {
+      "additionalProperties": false,
+      "description": "Files a learner brings in from the tool (an export), by media type.",
+      "properties": {
+        "accepts": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Accepts",
+          "type": "array"
+        }
+      },
+      "required": [
+        "accepts"
+      ],
+      "title": "Import",
+      "type": "object"
+    },
+    "Link": {
+      "additionalProperties": false,
+      "description": "A page opened in its own tab; `{name}` placeholders are filled from the preset.",
+      "properties": {
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "title": "Link",
+      "type": "object"
+    },
+    "Publisher": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "url"
+      ],
+      "title": "Publisher",
+      "type": "object"
+    },
+    "Service": {
+      "additionalProperties": false,
+      "description": "A headless tool reached over MCP: it renders or computes, it holds no learner.",
+      "properties": {
+        "mcp": {
+          "title": "Mcp",
+          "type": "string"
+        },
+        "tools": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Tools",
+          "type": "array"
+        }
+      },
+      "required": [
+        "mcp",
+        "tools"
+      ],
+      "title": "Service",
+      "type": "object"
+    },
+    "Surfaces": {
+      "additionalProperties": false,
+      "properties": {
+        "embed": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Embed"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "link": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Link"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "service": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Service"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "import": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Import"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "device": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Device"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Surfaces",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "One version of one tool, as its publisher declares it.",
+  "properties": {
+    "id": {
+      "description": "publisher/name",
+      "maxLength": 128,
+      "pattern": "^[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "version": {
+      "description": "semver",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "title": "Version",
+      "type": "string"
+    },
+    "sdk": {
+      "description": "the SDK major range the tool is built against",
+      "pattern": "^\\^[1-9]\\d*$",
+      "title": "Sdk",
+      "type": "string"
+    },
+    "publisher": {
+      "$ref": "#/$defs/Publisher"
+    },
+    "surfaces": {
+      "$ref": "#/$defs/Surfaces"
+    },
+    "payloads": {
+      "additionalProperties": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "description": "family.name@N -> the JSON Schema of that payload",
+      "title": "Payloads",
+      "type": "object"
+    },
+    "preset_schema": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "the payload a step's preset is written in",
+      "title": "Preset Schema"
+    },
+    "answers": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "item kind -> the payload it answers in",
+      "title": "Answers",
+      "type": "object"
+    },
+    "practice": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "activity -> the payload it is set up with",
+      "title": "Practice",
+      "type": "object"
+    },
+    "commands": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "command the Tutor may send -> its payload",
+      "title": "Commands",
+      "type": "object"
+    },
+    "assist": {
+      "default": "none",
+      "enum": [
+        "honors",
+        "none"
+      ],
+      "title": "Assist",
+      "type": "string"
+    },
+    "locales": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Locales",
+      "type": "array"
+    },
+    "conventions": {
+      "description": "payloads naming a convention the tool follows",
+      "items": {
+        "type": "string"
+      },
+      "title": "Conventions",
+      "type": "array"
+    },
+    "capabilities": {
+      "$ref": "#/$defs/Capabilities"
+    },
+    "files": {
+      "description": "the release's files, sorted by path",
+      "items": {
+        "$ref": "#/$defs/File"
+      },
+      "title": "Files",
+      "type": "array"
+    },
+    "bundle_digest": {
+      "anyOf": [
+        {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Bundle Digest"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "sdk",
+    "publisher",
+    "surfaces"
+  ],
+  "title": "ToolManifest",
+  "type": "object"
+}
