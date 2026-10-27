@@ -33,6 +33,11 @@ export interface MountOptions {
   onRefused?: (refusal: Refusal) => void;
   /** Checks payload bodies against the manifest's schemas (`payloadChecks(manifest)`); Narai's host always passes it. */
   payloads?: PayloadCheck;
+  /** How much practice a launch may report: a burst, then so many a minute (the study: batched, about one a minute).
+   *  The excess is refused through onRefused, so it's counted. Default 10, then 6 a minute. */
+  practiceLimit?: { burst: number; perMinute: number };
+  /** For tests: the clock (ms). */
+  now?: () => number;
   /** For tests: makes the channel (default: the platform's MessageChannel). */
   channel?: () => { port1: PortLike; port2: Transferable };
 }
@@ -42,6 +47,22 @@ export interface HostSession {
   command(command: string, payload: Payload): void;
   locale(locale: string, fallback?: string[]): void;
   close(): void;
+}
+
+/** A token bucket: `burst` at once, refilled at `perMinute`. */
+function bucket(burst: number, perMinute: number, now: () => number) {
+  let tokens = burst;
+  let at = now();
+  return {
+    take(): boolean {
+      const t = now();
+      tokens = Math.min(burst, tokens + ((t - at) / 60_000) * perMinute);
+      at = t;
+      if (tokens < 1) return false;
+      tokens -= 1;
+      return true;
+    },
+  };
 }
 
 /** The tool's origin: where its embed surface is. The port goes there and nowhere else. */
@@ -56,6 +77,8 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
   const { port1, port2 } = options.channel?.() ?? new MessageChannel();
   const refused = options.onRefused ?? (() => undefined);
   let ready = false;
+  const limit = options.practiceLimit ?? { burst: 10, perMinute: 6 };
+  const practice = bucket(limit.burst, limit.perMinute, options.now ?? Date.now);
   const channel = new Channel(port1, manifest, "host", () => ({ launch: options.launch, task: options.task, payloads: options.payloads }), refused);
   channel.listen((message: ToolMessage) => {
     if (!ready && message.type !== "tool.ready" && message.type !== "tool.close") {
@@ -65,7 +88,10 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
     switch (message.type) {
       case "tool.ready": ready = true; options.onReady?.(message as Ready); break;
       case "tool.answer": options.onAnswer?.(message as Answer); break;
-      case "tool.practice": options.onPractice?.(message as Practice); break;
+      case "tool.practice":
+        if (practice.take()) options.onPractice?.(message as Practice);
+        else refused({ reason: `practice over the limit (${limit.burst}, then ${limit.perMinute} a minute)`, data: message });
+        break;
       case "tool.close": options.onClose?.(message as Close); channel.close(); break;
       default: refused({ reason: `${message.type} isn't sent on the port`, data: message });
     }

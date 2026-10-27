@@ -1,35 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { connect, mountTool, ToolMessageError, type ConnectEvent, type HelloEvent, type HostSession, type HostWindow, type PortLike, type ToolFrame, type ToolSession, type ToolWindow } from "../src/index.js";
+import { connect, mountTool, ToolMessageError, type HostSession, type PortLike, type ToolSession } from "../src/index.js";
 import { payloadChecks } from "../src/payloads.js";
+import { browserPair, HOST_ORIGIN } from "../src/testing.js";
 import { ECHO, LAUNCH, TASK } from "./fixtures.js";
 
-const HOST = "https://michinar.ai";
+const HOST = HOST_ORIGIN;
 const TOOL = "https://echo.example";
-
-type Listener<E> = (event: E) => void;
-
-/** The host's window, the iframe and the tool's window, wired as a browser wires them: the tool's hello reaches the
- *  host's window from the frame at the tool's origin; the frame's postMessage reaches the tool's window from its parent
- *  at the host's origin, with the transferred ports. `as` forges where a message seems to come from. */
-function frameAndWindow(as: { origin?: string; source?: unknown; helloOrigin?: string } = {}) {
-  const hostListeners = new Set<Listener<HelloEvent>>();
-  const toolListeners = new Set<Listener<ConnectEvent>>();
-  const posted: string[] = [];
-  const later = <E>(listeners: Set<Listener<E>>, event: E) => queueMicrotask(() => { for (const l of [...listeners]) l(event); });
-  const hostWindow: HostWindow = { addEventListener: (_, l) => hostListeners.add(l), removeEventListener: (_, l) => hostListeners.delete(l) };
-  const frame: ToolFrame = {
-    postMessage: (data, targetOrigin, transfer) => {
-      posted.push(targetOrigin);
-      later(toolListeners, { data, origin: as.origin ?? HOST, source: as.source ?? hostWindow, ports: transfer as unknown as PortLike[] });
-    },
-  };
-  const win: ToolWindow = {
-    parent: Object.assign(hostWindow, { postMessage: (data: unknown) => later(hostListeners, { data, origin: as.helloOrigin ?? TOOL, source: frame }) }),
-    addEventListener: (_, l) => toolListeners.add(l),
-    removeEventListener: (_, l) => toolListeners.delete(l),
-  };
-  return { win, frame, hostWindow, posted, hostListeners, toolListeners };
-}
+const frameAndWindow = (as: Parameters<typeof browserPair>[1] = {}) => {
+  const pair = browserPair(ECHO, as);
+  return { ...pair, win: pair.toolWindow };
+};
 
 const ports: { close(): void }[] = [];
 function channel() {

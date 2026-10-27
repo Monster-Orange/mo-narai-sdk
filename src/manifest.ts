@@ -70,11 +70,29 @@ export function manifestProblems(value: unknown): string[] {
   return contractProblems(value as ToolManifest);
 }
 
+/** What isn't wrong but almost surely is: a payload schema that names `schema` (a payload's schema describes its body;
+ *  `schema` is the SDK's, taken off before the body is checked, so a schema that requires it fails every payload). */
+export function manifestWarnings(value: unknown): string[] {
+  const payloads = (value as { payloads?: Record<string, unknown> } | null)?.payloads ?? {};
+  const warnings: string[] = [];
+  for (const [ref, schema] of Object.entries(payloads)) {
+    const s = schema as { properties?: Record<string, unknown>; required?: unknown[] } | null;
+    if (s?.properties && "schema" in s.properties || s?.required?.includes("schema")) {
+      warnings.push(`/payloads/${ref} names \`schema\`: describe the body only (the SDK adds and removes \`schema\`)`);
+    }
+  }
+  return warnings;
+}
+
 /** The tool's manifest, checked against the contract and frozen: the only source of its permissions. */
-export function defineTool<const M extends ToolManifest>(manifest: M): Readonly<M> {
+export function defineTool<const M extends ToolManifest>(manifest: M): Readonly<M>;
+/** A manifest read as JSON (`import m from "./narai.tool.json"`, or parsed): checked at runtime, so its widened
+ *  strings are fine. */
+export function defineTool(manifest: unknown): Readonly<ToolManifest>;
+export function defineTool(manifest: unknown): Readonly<ToolManifest> {
   const problems = manifestProblems(manifest);
   if (problems.length) throw new ManifestError(problems);
-  return deepFreeze(structuredClone(manifest));
+  return deepFreeze(structuredClone(manifest as ToolManifest));
 }
 
 function deepFreeze<T>(value: T): T {

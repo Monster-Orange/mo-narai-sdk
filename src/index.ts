@@ -1,4 +1,4 @@
-export { defineTool, manifestProblems, ManifestError, type ToolManifest } from "./manifest.js";
+export { defineTool, manifestProblems, manifestWarnings, ManifestError, type ToolManifest } from "./manifest.js";
 export {
   checkMessage, CONTRACT_VERSION, PAYLOAD_MAX_BYTES, VERDICT_KEYS,
   type Answer, type Checked, type CheckContext, type Close, type Command, type Connect, type Hello, type LocaleSwitch, type Payload,

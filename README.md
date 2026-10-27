@@ -22,6 +22,7 @@ The command line (`narai`, in `@narai/cli`) scaffolds, validates, builds and reg
 import { connect, defineTool } from "@narai/sdk";
 
 const manifest = defineTool({ id: "you/echo", version: "0.1.0", sdk: "^1", /* … */ }); // throws a ManifestError, every reason
+// or a manifest kept as JSON: defineTool(json) checks it at runtime and returns a ToolManifest
 const tool = await connect(manifest, { hostOrigins: ["https://michinar.ai"] });
 
 tool.start;                       // the locale, its fallbacks, the step's preset, the task (if Narai judges one)
@@ -41,8 +42,37 @@ check every message against the envelope (`schema/envelope.schema.json`) and the
 declare: a command it doesn't list, a payload in another schema, a verdict (`correct`, `score`, `passed` …) anywhere
 in an answer, a payload over 64 KB, a message for another launch.
 
+A payload is `{ schema: "<family>.<name>@<N>", ...body }`. The JSON Schema a manifest declares under `payloads` describes
+the **body only**: the SDK takes `schema` off before checking it, so a schema that requires `schema` fails every payload
+(`manifestWarnings()` says so).
+
+```json
+"payloads": { "echo.answer@1": { "type": "object", "properties": { "text": { "type": "string" } }, "required": ["text"] } }
+```
+
+Narai's host takes a burst of 10 `tool.practice`, then 6 a minute, per launch: batch practice (the excess is refused,
+and counted).
+
 `@narai/sdk/payloads` checks payload bodies against the JSON Schemas the manifest declares (it compiles them, so it's
 for the host, the harness and the CLI, where eval is allowed).
+
+## Testing a tool
+
+`@narai/sdk/testing` launches a tool's session against Narai's own host over a real `MessageChannel`, wired as a
+browser wires the iframe:
+
+```ts
+import { launch } from "@narai/sdk/testing";
+
+const run = await launch(manifest, { locale: "ja", task });
+run.tool.ready("ja");
+run.tool.answer({ schema: "echo.answer@1", text: "hello" });
+await run.settle();
+run.received.answers;   // what the host took; run.received.refused: what it didn't, with the reason
+run.forge({ type: "tool.answer" /* … */ });   // straight onto the port, around the SDK
+run.postToTool({ type: "narai.tool.connect", v: 1 }, { origin: "https://evil.example" });   // as another page
+run.close();
+```
 
 ## The harness
 

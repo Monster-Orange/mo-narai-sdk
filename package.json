@@ -14,6 +14,10 @@
       "types": "./dist/payloads.d.ts",
       "import": "./dist/payloads.js"
     },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js"
+    },
     "./harness": {
       "types": "./dist/harness/index.d.ts",
       "import": "./dist/harness/index.js"
