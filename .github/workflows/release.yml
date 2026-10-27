@@ -1,0 +1,88 @@
+# Publishes this package to npm, with provenance, and attaches the exact tarball and its checksums to a GitHub release.
+# Only the npm tarball ships: no raw binaries. Runs on a version tag (v1.2.3, equal to package.json's version), or by
+# hand (workflow_dispatch), which is a dry run unless `publish` is ticked.
+#
+# The npm scope is ONE value: the repository variable NPM_SCOPE (Settings › Variables, e.g. `@example`). It isn't
+# chosen yet, so a publish stops until it's set; the package is published as <NPM_SCOPE>/sdk, whatever
+# package.json's name says.
+name: release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish to npm (unticked: build, test and pack only)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write # the GitHub release
+  id-token: write # npm provenance
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NPM_SCOPE: ${{ vars.NPM_SCOPE }}
+      PUBLISH: ${{ github.ref_type == 'tag' || inputs.publish }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+      - run: npm ci
+      - name: Chromium, for the harness e2e
+        run: npx playwright install --with-deps chromium
+      - name: The gates
+        run: |
+          npm run lint
+          npm run typecheck
+          npm test
+      - name: The version is the tag's
+        id: version
+        run: |
+          version=$(node -p 'require("./package.json").version')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::tag $GITHUB_REF_NAME, but package.json says $version"; exit 1
+          fi
+      - name: The npm name, from NPM_SCOPE
+        run: |
+          if [ -z "$NPM_SCOPE" ]; then
+            if [ "$PUBLISH" = true ]; then echo "::error::no npm scope chosen: set the repository variable NPM_SCOPE"; exit 1; fi
+            echo "NPM_SCOPE unset: a dry run packs under package.json's name"; exit 0
+          fi
+          case "$NPM_SCOPE" in @[a-z0-9]*) ;; *) echo "::error::NPM_SCOPE must look like @scope"; exit 1;; esac
+          npm pkg set name="$NPM_SCOPE/sdk"
+          node -p 'require("./package.json").name'
+      - name: Pack, and the checksums
+        id: pack
+        run: |
+          mkdir -p release
+          tarball=$(npm pack --pack-destination release --json | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8"))[0].filename)')
+          (cd release && sha256sum "$tarball" > SHA256SUMS && cat SHA256SUMS)
+          echo "tarball=release/$tarball" >> "$GITHUB_OUTPUT"
+      - name: Publish to npm, with provenance
+        if: env.PUBLISH == 'true'
+        run: npm publish "${{ steps.pack.outputs.tarball }}" --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: The GitHub release, with the tarball and SHA256SUMS
+        if: env.PUBLISH == 'true'
+        run: |
+          tag="v${{ steps.version.outputs.version }}"
+          gh release create "$tag" "${{ steps.pack.outputs.tarball }}" release/SHA256SUMS --title "$NPM_SCOPE/sdk $tag" --generate-notes --verify-tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: A dry run, what would ship
+        if: env.PUBLISH != 'true'
+        run: ls -l release && cat release/SHA256SUMS

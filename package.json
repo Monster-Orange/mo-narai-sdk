@@ -3,7 +3,15 @@
   "version": "0.0.0",
   "description": "Build tools that run inside Narai lessons: the manifest, the embed runtime and a local test harness.",
   "license": "UNLICENSED",
-  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Monster-Orange/mo-narai-sdk.git"
+  },
+  "homepage": "https://github.com/Monster-Orange/mo-narai-sdk#readme",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "type": "module",
   "exports": {
     ".": {
