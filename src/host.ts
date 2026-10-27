@@ -33,7 +33,7 @@ export interface MountOptions {
   onRefused?: (refusal: Refusal) => void;
   /** Checks payload bodies against the manifest's schemas (`payloadChecks(manifest)`); Narai's host always passes it. */
   payloads?: PayloadCheck;
-  /** How much practice a launch may report: a burst, then so many a minute (the study: batched, about one a minute).
+  /** How much practice a launch may report: a burst, then so many a minute (practice is reported in batches, about one a minute).
    *  The excess is refused through onRefused, so it's counted. Default 10, then 6 a minute. */
   practiceLimit?: { burst: number; perMinute: number };
   /** For tests: the clock (ms). */

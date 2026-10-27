@@ -104,20 +104,25 @@ npm run lint
 npm run typecheck
 ```
 
+## Stability
+
+0.x: the contract (the manifest, the wire, the registry's API) can still change between minor versions, and the
+changelog says how. 1.0 will hold it.
+
 ## Releasing
 
 npm's trusted publishing only: no npm token, in CI or anywhere else. The workflow is `.github/workflows/release.yml`.
 
 **Every release.** Set `version` in package.json, merge it, and push the tag `v<version>`. The workflow runs the
 gates, packs the tarball and its `SHA256SUMS`, and **stages** it on npm over OIDC (`npm stage publish`). It also makes
-a GitHub release with both files. Nothing is public until Ward approves it on npm, with 2FA:
+a GitHub release with both files. Nothing is public until a maintainer approves it on npm, with 2FA:
 
 ```sh
 npm stage list @michinarai/sdk
 npm stage approve <stage-id>
 ```
 
-**The first publish of the package, once.** Trusted publishing can't create a package, so Ward publishes the first
+**The first publish of the package, once.** Trusted publishing can't create a package, so a maintainer publishes the first
 version by hand from his machine:
 
 1. Run the workflow by hand (Actions › release › Run workflow). It's a dry run, and it keeps the tarball and
@@ -136,5 +141,6 @@ Mind:
   only at publish time, as an `E404` that looks like a missing package. package.json's `repository.url` must be this
   repository exactly.
 - A new trusted-publisher configuration must publish (or stage) within 2 days, or it expires.
-- The repository is private, so packages ship **without provenance**. Provenance turns on by itself (no flag) if the
-  repository and the package are both public.
+- Provenance is on: npm generates it under trusted publishing for a public repository and a public package, with no
+  flag, staged releases included. package.json's `repository.url` is what npm checks it against. The one-time first
+  publish, from a maintainer's machine, has none.
