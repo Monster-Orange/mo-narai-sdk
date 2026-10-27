@@ -71,6 +71,8 @@ await run.settle();
 run.received.answers;   // what the host took; run.received.refused: what it didn't, with the reason
 run.forge({ type: "tool.answer" /* … */ });   // straight onto the port, around the SDK
 run.postToTool({ type: "narai.tool.connect", v: 1 }, { origin: "https://evil.example" });   // as another page
+run.postToHost({ type: "tool.hello", v: 1 });   // on the host's window, as the frame (or { origin, source })
+run.connects;           // where the host has posted a connect: once, at the tool's origin
 run.close();
 ```
 

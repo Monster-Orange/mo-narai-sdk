@@ -39,7 +39,11 @@ export function browserPair(manifest: ToolManifest, as: Forged & { helloOrigin?:
   /** A message on the tool's window, as any page could post one (a forged connect, say). */
   const postToTool = (data: unknown, from: Forged = {}, ports: PortLike[] = []) =>
     later(toolListeners, { data, origin: from.origin ?? HOST_ORIGIN, source: from.source ?? hostWindow, ports });
-  return { hostWindow, frame, toolWindow, posted, postToTool, hostListeners, toolListeners };
+  /** A message on the host's window, as the frame (by default) or any page could post one: a second hello, an
+   *  answer posted around the port. */
+  const postToHost = (data: unknown, from: Forged = {}) =>
+    later(hostListeners, { data, origin: from.origin ?? helloOrigin, source: from.source ?? frame });
+  return { hostWindow, frame, toolWindow, posted, postToTool, postToHost, hostListeners, toolListeners };
 }
 
 export interface LaunchOptions {
@@ -73,6 +77,10 @@ export interface Launched {
   forge(message: unknown): void;
   /** Posts on the tool's window, as another page could. */
   postToTool: ReturnType<typeof browserPair>["postToTool"];
+  /** Posts on the host's window, as the frame (by default) or another page could. */
+  postToHost: ReturnType<typeof browserPair>["postToHost"];
+  /** The origins the host has posted a connect to (one, at the tool's origin, after the hello). */
+  connects: readonly string[];
   /** Lets every message in flight arrive. */
   settle(): Promise<void>;
   close(): void;
@@ -110,6 +118,8 @@ export async function launch(manifest: ToolManifest, options: LaunchOptions = {}
     tool, host, received, toolRefused,
     forge: (message) => channel.port2.postMessage(message),
     postToTool: pair.postToTool,
+    postToHost: pair.postToHost,
+    connects: pair.posted,
     settle,
     close: () => { host.close(); channel.port1.close(); channel.port2.close(); },
   };

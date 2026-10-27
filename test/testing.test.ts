@@ -25,6 +25,19 @@ describe("@narai/sdk/testing", () => {
   });
 });
 
+describe("forging onto the host's window (#10)", () => {
+  it("a second hello gets no second connect, and an answer posted around the port is never taken", async () => {
+    const run = await launch(ECHO, { task: TASK });
+    run.tool.ready("en");
+    run.postToHost({ type: "tool.hello", v: 1 });
+    run.postToHost({ type: "tool.answer", v: 1, launch: "lch_testlaunch01", task: TASK.id, payload: { schema: "echo.answer@1", text: "around" } });
+    await run.settle();
+    expect(run.connects).toEqual(["https://echo.example"]);
+    expect(run.received.answers).toEqual([]);
+    run.close();
+  });
+});
+
 describe("the host's practice limit (#6)", () => {
   it("takes a burst, then so many a minute; the excess is refused and counted", async () => {
     let now = 0;
