@@ -49,6 +49,10 @@
       "description": "A page Narai frames. `sdk: none` is a passive tool: shown, never spoken to.",
       "properties": {
         "url": {
+          "description": "the tool's page; its origin is the frame's origin",
+          "format": "uri",
+          "maxLength": 500,
+          "pattern": "^https://\\S+$",
           "title": "Url",
           "type": "string"
         },
@@ -117,6 +121,9 @@
       "description": "A page opened in its own tab; `{name}` placeholders are filled from the preset.",
       "properties": {
         "url": {
+          "format": "uri",
+          "maxLength": 500,
+          "pattern": "^https://\\S+$",
           "title": "Url",
           "type": "string"
         }
@@ -137,6 +144,9 @@
           "type": "string"
         },
         "url": {
+          "format": "uri",
+          "maxLength": 500,
+          "pattern": "^https://\\S+$",
           "title": "Url",
           "type": "string"
         }
@@ -153,6 +163,9 @@
       "description": "A headless tool reached over MCP: it renders or computes, it holds no learner.",
       "properties": {
         "mcp": {
+          "format": "uri",
+          "maxLength": 500,
+          "pattern": "^https://\\S+$",
           "title": "Mcp",
           "type": "string"
         },
@@ -174,6 +187,7 @@
     },
     "Surfaces": {
       "additionalProperties": false,
+      "minProperties": 1,
       "properties": {
         "embed": {
           "anyOf": [
@@ -269,6 +283,9 @@
         "type": "object"
       },
       "description": "family.name@N -> the JSON Schema of that payload",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]*(?:\\.[a-z][a-z0-9-]*)+@[1-9]\\d*$"
+      },
       "title": "Payloads",
       "type": "object"
     },
@@ -290,6 +307,10 @@
         "type": "string"
       },
       "description": "item kind -> the payload it answers in",
+      "propertyNames": {
+        "maxLength": 128,
+        "minLength": 1
+      },
       "title": "Answers",
       "type": "object"
     },
@@ -298,6 +319,10 @@
         "type": "string"
       },
       "description": "activity -> the payload it is set up with",
+      "propertyNames": {
+        "maxLength": 128,
+        "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_-]*)*$"
+      },
       "title": "Practice",
       "type": "object"
     },
@@ -306,6 +331,10 @@
         "type": "string"
       },
       "description": "command the Tutor may send -> its payload",
+      "propertyNames": {
+        "maxLength": 128,
+        "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_-]*)*$"
+      },
       "title": "Commands",
       "type": "object"
     },

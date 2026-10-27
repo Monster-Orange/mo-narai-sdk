@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "about": "D4: tools measure, Narai decides. An answer payload's schema that declares any of these as a property name (under properties or patternProperties, at any depth, compared lower-cased) is refused.",
+  "fields": ["correct", "failed", "grade", "incorrect", "is_correct", "is_passed", "pass_fail", "passed", "score", "verdict"]
+}
