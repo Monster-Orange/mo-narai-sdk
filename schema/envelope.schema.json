@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://michinar.ai/schema/tool-envelope/1.json",
+  "title": "ToolMessage",
+  "description": "Every message between Narai's tool host and a tool (contract v1). A domain-neutral envelope; what a domain needs travels in a typed payload whose schema the manifest declares. No verdict field anywhere: a tool sends what the learner did, Narai judges.",
+  "type": "object",
+  "discriminator": { "propertyName": "type" },
+  "required": ["type"],
+  "properties": { "type": { "type": "string" } },
+  "oneOf": [
+    { "$ref": "#/$defs/Hello" },
+    { "$ref": "#/$defs/Connect" },
+    { "$ref": "#/$defs/Start" },
+    { "$ref": "#/$defs/Command" },
+    { "$ref": "#/$defs/LocaleSwitch" },
+    { "$ref": "#/$defs/Ready" },
+    { "$ref": "#/$defs/Answer" },
+    { "$ref": "#/$defs/Practice" },
+    { "$ref": "#/$defs/Close" }
+  ],
+  "$defs": {
+    "Version": { "description": "The contract version.", "const": 1 },
+    "LaunchId": {
+      "description": "Opaque, single use, expires. It stands in for the learner, who is never named.",
+      "type": "string",
+      "pattern": "^lch_[A-Za-z0-9_-]{8,64}$"
+    },
+    "LocaleTag": { "type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$" },
+    "Payload": {
+      "description": "A typed payload: `schema` names one the manifest declares for this message; the rest is that schema's.",
+      "type": "object",
+      "required": ["schema"],
+      "properties": { "schema": { "type": "string", "pattern": "^[a-z][a-z0-9-]*\\.[a-z0-9][a-z0-9.-]*@[1-9][0-9]*$" } }
+    },
+    "Task": {
+      "description": "An item Narai judges itself. The prompt is already in the learner's language; the tool shows it, never writes one.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "assist", "prompt"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "kind": { "type": "string", "minLength": 1, "maxLength": 128, "description": "a key of the manifest's answers" },
+        "assist": { "description": "`none`: the tool hides its own checks for this task.", "enum": ["none", "allowed"] },
+        "prompt": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "payload": { "$ref": "#/$defs/Payload" }
+      }
+    },
+    "Hello": {
+      "description": "Tool → its parent window, once its SDK is listening: the host answers with the connect. A tool that loads late misses nothing.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "v"],
+      "properties": { "type": { "const": "tool.hello" }, "v": { "$ref": "#/$defs/Version" } }
+    },
+    "Connect": {
+      "description": "Narai → tool, on the window, in answer to its hello: the MessagePort every later message travels on.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "v"],
+      "properties": { "type": { "const": "narai.tool.connect" }, "v": { "$ref": "#/$defs/Version" } }
+    },
+    "Start": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "v", "launch", "locale", "fallback"],
+      "properties": {
+        "type": { "const": "narai.tool.start" },
+        "v": { "$ref": "#/$defs/Version" },
+        "launch": { "$ref": "#/$defs/LaunchId" },
+        "locale": { "$ref": "#/$defs/LocaleTag" },
+        "fallback": { "description": "Best first; the tool renders the first it has.", "type": "array", "items": { "$ref": "#/$defs/LocaleTag" } },
+        "conventions": { "$ref": "#/$defs/Payload" },
+        "preset": { "$ref": "#/$defs/Payload" },
+        "task": { "$ref": "#/$defs/Task" }
+      }
+    },
+    "Command": {
+      "description": "Narai → tool, when the Tutor acts: only commands the manifest lists.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "v", "launch", "command", "payload"],
+      "properties": {
+        "type": { "const": "narai.tool.command" },
+        "v": { "$ref": "#/$defs/Version" },
+        "launch": { "$ref": "#/$defs/LaunchId" },
+        "command": { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_-]*)*$" },
+        "payload": { "$ref": "#/$defs/Payload" }
+      }
+    },
+    "LocaleSwitch": {
+      "description": "Narai → tool, when the learner switches language mid-session.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "v", "launch", "locale", "fallback"],
+      "properties": {
+        "type": { "const": "narai.tool.locale" },
+        "v": { "$ref": "#/$defs/Version" },
+        "launch": { "$ref": "#/$defs/LaunchId" },
+        "locale": { "$ref": "#/$defs/LocaleTag" },
+        "fallback": { "type": "array", "items": { "$ref": "#/$defs/LocaleTag" } }
+      }
+    },
+    "Ready": {
+      "description": "Tool → Narai: started, in the locale it actually rendered (the host flags a fallback).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "v", "launch", "tool", "version", "locale"],
+      "properties": {
+        "type": { "const": "tool.ready" },
+        "v": { "$ref": "#/$defs/Version" },
+        "launch": { "$ref": "#/$defs/LaunchId" },
+        "tool": { "type": "string" },
+        "version": { "type": "string" },
+        "locale": { "$ref": "#/$defs/LocaleTag" }
+      }
+    },
+    "Answer": {
+      "description": "Tool → Narai: what the learner did on a task. Raw; Narai judges.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "v", "launch", "task", "payload"],
+      "properties": {
+        "type": { "const": "tool.answer" },
+        "v": { "$ref": "#/$defs/Version" },
+        "launch": { "$ref": "#/$defs/LaunchId" },
+        "task": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "payload": { "$ref": "#/$defs/Payload" }
+      }
+    },
+    "Practice": {
+      "description": "Tool → Narai: practice outside a task. Moves memory, never mastery.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "v", "launch", "activity", "duration_s", "attempts", "payload"],
+      "properties": {
+        "type": { "const": "tool.practice" },
+        "v": { "$ref": "#/$defs/Version" },
+        "launch": { "$ref": "#/$defs/LaunchId" },
+        "activity": { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_-]*)*$" },
+        "duration_s": { "type": "number", "minimum": 0, "maximum": 86400 },
+        "attempts": { "type": "integer", "minimum": 0, "maximum": 100000 },
+        "payload": { "$ref": "#/$defs/Payload" }
+      }
+    },
+    "Close": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "v", "launch", "reason"],
+      "properties": {
+        "type": { "const": "tool.close" },
+        "v": { "$ref": "#/$defs/Version" },
+        "launch": { "$ref": "#/$defs/LaunchId" },
+        "reason": { "enum": ["done", "user", "error"] }
+      }
+    }
+  }
+}

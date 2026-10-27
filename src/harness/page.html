@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Narai tool harness</title>
+<style>
+  :root { color-scheme: light dark; font: 14px/1.5 system-ui, sans-serif; }
+  body { margin: 0; display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); min-height: 100vh; }
+  iframe { width: 100%; height: 100%; border: 0; border-inline-end: 1px solid #8884; }
+  aside { padding: 12px 16px; display: grid; gap: 12px; align-content: start; }
+  ol { margin: 0; padding: 0; list-style: none; font: 12px/1.4 ui-monospace, monospace; display: grid; gap: 4px; overflow-wrap: anywhere; }
+  .refused { color: #c62828; }
+  form { display: grid; gap: 6px; }
+  textarea { font: 12px ui-monospace, monospace; min-height: 4em; }
+  @media (max-width: 720px) { body { grid-template-columns: 1fr; grid-template-rows: 60vh auto; } }
+</style>
+</head>
+<body>
+<iframe id="tool" title="The tool" sandbox="allow-scripts allow-same-origin"></iframe>
+<aside>
+  <h1 style="font-size: 16px; margin: 0">Narai tool harness</h1>
+  <form id="commands" hidden>
+    <label>Command <select name="command"></select></label>
+    <textarea name="payload" placeholder='{"…": "the payload body"}'></textarea>
+    <button>Send as the Tutor</button>
+  </form>
+  <ol id="log" aria-label="Messages"></ol>
+</aside>
+<script type="module" src="/sdk/harness/page.js"></script>
+</body>
+</html>
