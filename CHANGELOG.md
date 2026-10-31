@@ -8,6 +8,7 @@ how. A version's entry lists what a tool or a host has to change, first.
 Nothing to change: the code and the contract are 0.1.0's.
 
 - The first release published from this repository's release workflow, over npm's trusted publishing, with provenance.
+  A tag publishes; nothing to approve.
 - The README says how to install the package, and points here.
 
 ## 0.1.0
