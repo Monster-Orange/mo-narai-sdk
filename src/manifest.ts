@@ -25,6 +25,7 @@ function contractProblems(m: ToolManifest): string[] {
   const declared = new Set(Object.keys(m.payloads ?? {}));
   const named: [string, string][] = [
     ...(m.preset_schema ? [["/preset_schema", m.preset_schema] as [string, string]] : []),
+    ...(m.state ? [["/state", m.state] as [string, string]] : []),
     ...Object.entries(m.answers ?? {}).map(([k, ref]): [string, string] => [`/answers/${k}`, ref]),
     ...Object.entries(m.practice ?? {}).map(([k, ref]): [string, string] => [`/practice/${k}`, ref]),
     ...Object.entries(m.commands ?? {}).map(([k, ref]): [string, string] => [`/commands/${k}`, ref]),

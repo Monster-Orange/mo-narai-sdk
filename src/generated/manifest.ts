@@ -31,6 +31,10 @@ export interface ToolManifest {
    */
   preset_schema?: string | null;
   /**
+   * the payload the tool's state is in (tool.state): what it shows, never the learner
+   */
+  state?: string | null;
+  /**
    * item kind -> the payload it answers in
    */
   answers?: {

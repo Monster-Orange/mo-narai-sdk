@@ -1,4 +1,4 @@
-import type { Answer, Command, Practice, Start, Task, ToolMessage } from "./generated/envelope.js";
+import type { Answer, Command, Practice, Start, State, Task, ToolMessage } from "./generated/envelope.js";
 import type { ToolManifest } from "./generated/manifest.js";
 import { validateMessage } from "./generated/validators.js";
 import { describe } from "./manifest.js";
@@ -6,7 +6,7 @@ import { VERDICT_KEYS } from "./verdicts.js";
 
 export { VERDICT_KEYS } from "./verdicts.js";
 
-export type { Answer, Close, Command, Connect, Hello, LocaleSwitch, Payload, Practice, Ready, Start, Task, ToolMessage } from "./generated/envelope.js";
+export type { Answer, Close, Command, CommandAck, CommandError, Connect, Hello, LocaleSwitch, Payload, Practice, Ready, Start, State, StateGet, Task, ToolMessage } from "./generated/envelope.js";
 
 /** The contract version this SDK speaks (`v` on every message). */
 export const CONTRACT_VERSION = 1;
@@ -89,6 +89,7 @@ function byManifest(m: ToolManifest, message: ToolMessage, task: CheckContext["t
     case "narai.tool.command": return checkCommand(m, message as Command);
     case "tool.answer": return checkAnswer(m, message as Answer, task);
     case "tool.practice": return checkPractice(m, message as Practice);
+    case "tool.state": return checkState(m, message as State);
     default: return null;
   }
 }
@@ -124,6 +125,13 @@ function checkAnswer(m: ToolManifest, message: Answer, task: CheckContext["task"
   } else if (!kinds.some(([, schema]) => schema === message.payload.schema)) {
     return `answer payload ${message.payload.schema} isn't among the manifest's answers`;
   }
+  return null;
+}
+
+/** A tool's state travels in the one payload its manifest names, `state`. */
+function checkState(m: ToolManifest, message: State): string | null {
+  if (!m.state) return "the manifest names no state";
+  if (message.payload.schema !== m.state) return `state is ${m.state}, not ${message.payload.schema}`;
   return null;
 }
 
