@@ -6,13 +6,16 @@ import { VERDICT_KEYS } from "./verdicts.js";
 
 export { VERDICT_KEYS } from "./verdicts.js";
 
-export type { Answer, Close, Command, CommandAck, CommandError, Connect, Hello, LocaleSwitch, Payload, Practice, Ready, Start, State, StateGet, Task, ToolMessage } from "./generated/envelope.js";
+export type { Answer, Close, Command, CommandAck, CommandError, Connect, Hello, LocaleSwitch, Payload, Practice, Ready, Start, State, StateGet, StorageDelete, StorageGet, StorageResult, StorageSet, Task, ToolMessage } from "./generated/envelope.js";
 
 /** The contract version this SDK speaks (`v` on every message). */
 export const CONTRACT_VERSION = 1;
 
 /** The most a payload may weigh, serialized (larger answers will travel as an upload reference). */
 export const PAYLOAD_MAX_BYTES = 64 * 1024;
+
+/** The most one stored value may weigh, serialized (a launch's storage; JSON Schema can't say it, so both sides check). */
+export const STORAGE_VALUE_MAX = 16 * 1024;
 
 export type Checked = { ok: true; message: ToolMessage } | { ok: false; reason: string };
 
@@ -61,6 +64,9 @@ export function checkMessage(manifest: ToolManifest, value: unknown, ctx: CheckC
   }
   if ("payload" in message && message.payload !== undefined && bytes(message.payload) > PAYLOAD_MAX_BYTES) {
     return refuse(`the payload is over ${PAYLOAD_MAX_BYTES} bytes`);
+  }
+  if (message.type === "tool.storage.set" && bytes(message.value) > STORAGE_VALUE_MAX) {
+    return refuse(`a stored value is at most ${STORAGE_VALUE_MAX} bytes`);
   }
   const reason = byManifest(manifest, message, ctx.task) ?? bodies(message, ctx.payloads);
   return reason ? refuse(reason) : { ok: true, message };
