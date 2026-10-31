@@ -35,7 +35,9 @@ describe("the registry's rules, checked before an upload", () => {
     const m = echo();
     m.commands = { highlight: "echo.highlight@1", jump: "echo.jump@1" };
     m.conventions = ["echo.notation@1"];
+    m.state = "echo.screen@1";
     expect(manifestProblems(m)).toEqual([
+      "/state names echo.screen@1, which isn't declared under /payloads",
       "/commands/jump names echo.jump@1, which isn't declared under /payloads",
       "/conventions/0 names echo.notation@1, which isn't declared under /payloads",
     ]);

@@ -114,6 +114,12 @@
           "title": "Launch",
           "type": "string"
         },
+        "id": {
+          "description": "The tool answers it once: tool.command.ack or tool.command.error, `re` this id.",
+          "pattern": "^[A-Za-z0-9_-]{4,64}$",
+          "title": "Id",
+          "type": "string"
+        },
         "command": {
           "maxLength": 128,
           "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_-]*)*$",
@@ -128,10 +134,110 @@
         "type",
         "v",
         "launch",
+        "id",
         "command",
         "payload"
       ],
       "title": "Command",
+      "type": "object"
+    },
+    "CommandAck": {
+      "additionalProperties": false,
+      "description": "Tool -> Narai: the command named by `re` was carried out.",
+      "properties": {
+        "type": {
+          "const": "tool.command.ack",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        },
+        "launch": {
+          "description": "Opaque, single use, expires. It stands in for the learner.",
+          "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+          "title": "Launch",
+          "type": "string"
+        },
+        "re": {
+          "description": "The sender's own id for a request.",
+          "pattern": "^[A-Za-z0-9_-]{4,64}$",
+          "title": "Re",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "v",
+        "launch",
+        "re"
+      ],
+      "title": "CommandAck",
+      "type": "object"
+    },
+    "CommandError": {
+      "additionalProperties": false,
+      "description": "Tool -> Narai: the command named by `re` was not carried out, and why. (The host takes no answer in time as\n`failed`.)",
+      "properties": {
+        "type": {
+          "const": "tool.command.error",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        },
+        "launch": {
+          "description": "Opaque, single use, expires. It stands in for the learner.",
+          "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+          "title": "Launch",
+          "type": "string"
+        },
+        "re": {
+          "description": "The sender's own id for a request.",
+          "pattern": "^[A-Za-z0-9_-]{4,64}$",
+          "title": "Re",
+          "type": "string"
+        },
+        "code": {
+          "enum": [
+            "unknown_command",
+            "invalid_payload",
+            "unsupported",
+            "failed"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "For the developer; never shown to a learner.",
+          "title": "Message"
+        }
+      },
+      "required": [
+        "type",
+        "v",
+        "launch",
+        "re",
+        "code"
+      ],
+      "title": "CommandError",
       "type": "object"
     },
     "Connect": {
@@ -420,6 +526,287 @@
       "title": "Start",
       "type": "object"
     },
+    "State": {
+      "additionalProperties": false,
+      "description": "Tool -> Narai: what the tool shows, in the payload the manifest's `state` names; on every change, and in answer\nto narai.tool.state.get (`re`). Never anything about the learner: the envelope is closed, and the payload is the\nmanifest's.",
+      "properties": {
+        "type": {
+          "const": "tool.state",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        },
+        "launch": {
+          "description": "Opaque, single use, expires. It stands in for the learner.",
+          "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+          "title": "Launch",
+          "type": "string"
+        },
+        "re": {
+          "anyOf": [
+            {
+              "description": "The sender's own id for a request.",
+              "pattern": "^[A-Za-z0-9_-]{4,64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Re"
+        },
+        "payload": {
+          "$ref": "#/$defs/Payload"
+        }
+      },
+      "required": [
+        "type",
+        "v",
+        "launch",
+        "payload"
+      ],
+      "title": "State",
+      "type": "object"
+    },
+    "StateGet": {
+      "additionalProperties": false,
+      "description": "Narai -> tool: send your state now (tool.state, `re` this id).",
+      "properties": {
+        "type": {
+          "const": "narai.tool.state.get",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        },
+        "launch": {
+          "description": "Opaque, single use, expires. It stands in for the learner.",
+          "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+          "title": "Launch",
+          "type": "string"
+        },
+        "id": {
+          "description": "The sender's own id for a request.",
+          "pattern": "^[A-Za-z0-9_-]{4,64}$",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "v",
+        "launch",
+        "id"
+      ],
+      "title": "StateGet",
+      "type": "object"
+    },
+    "StorageDelete": {
+      "additionalProperties": false,
+      "description": "Tool -> Narai: remove a key of this launch's storage.",
+      "properties": {
+        "type": {
+          "const": "tool.storage.delete",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        },
+        "launch": {
+          "description": "Opaque, single use, expires. It stands in for the learner.",
+          "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+          "title": "Launch",
+          "type": "string"
+        },
+        "id": {
+          "description": "The sender's own id for a request.",
+          "pattern": "^[A-Za-z0-9_-]{4,64}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "key": {
+          "pattern": "^[a-z0-9._-]{1,64}$",
+          "title": "Key",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "v",
+        "launch",
+        "id",
+        "key"
+      ],
+      "title": "StorageDelete",
+      "type": "object"
+    },
+    "StorageGet": {
+      "additionalProperties": false,
+      "description": "Tool -> Narai: read a key of this launch's storage (the host scopes it to the tool and the launch).",
+      "properties": {
+        "type": {
+          "const": "tool.storage.get",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        },
+        "launch": {
+          "description": "Opaque, single use, expires. It stands in for the learner.",
+          "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+          "title": "Launch",
+          "type": "string"
+        },
+        "id": {
+          "description": "The sender's own id for a request.",
+          "pattern": "^[A-Za-z0-9_-]{4,64}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "key": {
+          "pattern": "^[a-z0-9._-]{1,64}$",
+          "title": "Key",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "v",
+        "launch",
+        "id",
+        "key"
+      ],
+      "title": "StorageGet",
+      "type": "object"
+    },
+    "StorageResult": {
+      "additionalProperties": false,
+      "description": "Narai -> tool: the answer to a storage call (`re`), as Narai's store gives it: a get of a key is ok with its\nvalue; of a missing key, not ok, `not_found` (a stored JSON null stays distinct from no key). A set is ok, or\n`quota` past the launch's limits. A delete is ok, a missing key too (idempotent). `denied`: the launch is closed,\nexpired or not the caller's.",
+      "properties": {
+        "type": {
+          "const": "narai.tool.storage.result",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        },
+        "launch": {
+          "description": "Opaque, single use, expires. It stands in for the learner.",
+          "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+          "title": "Launch",
+          "type": "string"
+        },
+        "re": {
+          "description": "The sender's own id for a request.",
+          "pattern": "^[A-Za-z0-9_-]{4,64}$",
+          "title": "Re",
+          "type": "string"
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "value": {
+          "default": null,
+          "title": "Value"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "enum": [
+                "quota",
+                "not_found",
+                "denied"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        }
+      },
+      "required": [
+        "type",
+        "v",
+        "launch",
+        "re",
+        "ok"
+      ],
+      "title": "StorageResult",
+      "type": "object"
+    },
+    "StorageSet": {
+      "additionalProperties": false,
+      "description": "Tool -> Narai: write a key of this launch's storage: any JSON, at most STORAGE_VALUE_MAX bytes.",
+      "properties": {
+        "type": {
+          "const": "tool.storage.set",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        },
+        "launch": {
+          "description": "Opaque, single use, expires. It stands in for the learner.",
+          "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+          "title": "Launch",
+          "type": "string"
+        },
+        "id": {
+          "description": "The sender's own id for a request.",
+          "pattern": "^[A-Za-z0-9_-]{4,64}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "key": {
+          "pattern": "^[a-z0-9._-]{1,64}$",
+          "title": "Key",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value"
+        }
+      },
+      "required": [
+        "type",
+        "v",
+        "launch",
+        "id",
+        "key",
+        "value"
+      ],
+      "title": "StorageSet",
+      "type": "object"
+    },
     "Task": {
       "additionalProperties": false,
       "description": "An item Narai judges itself. The prompt is already in the learner's language; the tool shows it, never writes\none.",
@@ -489,6 +876,30 @@
     },
     {
       "$ref": "#/$defs/Command"
+    },
+    {
+      "$ref": "#/$defs/CommandAck"
+    },
+    {
+      "$ref": "#/$defs/CommandError"
+    },
+    {
+      "$ref": "#/$defs/StateGet"
+    },
+    {
+      "$ref": "#/$defs/State"
+    },
+    {
+      "$ref": "#/$defs/StorageGet"
+    },
+    {
+      "$ref": "#/$defs/StorageSet"
+    },
+    {
+      "$ref": "#/$defs/StorageDelete"
+    },
+    {
+      "$ref": "#/$defs/StorageResult"
     },
     {
       "$ref": "#/$defs/LocaleSwitch"
