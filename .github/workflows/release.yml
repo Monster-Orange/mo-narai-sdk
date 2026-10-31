@@ -1,31 +1,69 @@
-# Releases @michinarai/sdk (README › Releasing). npm's trusted publishing only: no token anywhere, in CI or out.
-# - A version tag (v1.2.3, equal to package.json's version) packs the tarball, PUBLISHES it on npm (`npm publish`, over
-#   OIDC, with provenance), and makes a GitHub release with the tarball and SHA256SUMS. A tag publishes; nothing to
-#   approve.
+# Releases @michinarai/sdk (README › Releasing). npm's trusted publishing only: no token anywhere, in CI or out. npm
+# trusts this file by its name: never rename it.
+# - A push to main whose package.json version isn't on npm yet IS the release: the gates, the tarball and SHA256SUMS,
+#   the tag v<version> (made here, unless it already tags this commit or one before it), `npm publish` over OIDC with
+#   provenance, and a GitHub release with the tarball and SHA256SUMS. A version already on npm: nothing runs past the
+#   check. No human step.
 # - By hand (workflow_dispatch): a dry run. The same gates and the same tarball, kept with SHA256SUMS as an artifact:
 #   the one-time first publish of a package (which trusted publishing can't do) is that tarball, from a maintainer's machine.
+# There is no tag trigger: a version is released from main, once (npm refuses to publish a version twice).
 # Only the npm tarball ships: no raw binaries.
 name: release
 
 on:
   push:
-    tags: ["v*.*.*"]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# one run at a time, in order: a run that starts after a release finds its version on npm and stops
 concurrency:
   group: release
   cancel-in-progress: false
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      release: ${{ steps.check.outputs.release }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.14.0
+      - name: Is this version on npm yet?
+        id: check
+        env:
+          NPM_SCOPE: ${{ vars.NPM_SCOPE }}
+        run: |
+          version=$(node -p 'require("./package.json").version')
+          name=$(node -p 'require("./package.json").name')
+          case "$name" in "$NPM_SCOPE"/*) ;; *) echo "::error::$name isn't under the repository variable NPM_SCOPE ($NPM_SCOPE)"; exit 1;; esac
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # on npm: it prints the version. Not on npm: nothing, or E404. Any other error (the registry down) fails the
+          # run rather than guess.
+          if found=$(npm view "$name@$version" version 2> npm-view.err); then
+            if [ "$found" = "$version" ]; then release=false; else release=true; fi
+          elif grep -q E404 npm-view.err; then
+            release=true
+          else
+            cat npm-view.err; exit 1
+          fi
+          if [ "$GITHUB_EVENT_NAME" != push ]; then release=false; fi
+          echo "release=$release" >> "$GITHUB_OUTPUT"
+          echo "$name@$version: release=$release ($GITHUB_EVENT_NAME)"
+
   pack:
+    needs: check
+    if: needs.check.outputs.release == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
       tarball: ${{ steps.pack.outputs.tarball }}
-      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -40,18 +78,6 @@ jobs:
           npm run lint
           npm run typecheck
           npm test
-      - name: The version is the tag's, the name is the scope's
-        id: version
-        env:
-          NPM_SCOPE: ${{ vars.NPM_SCOPE }}
-        run: |
-          version=$(node -p 'require("./package.json").version')
-          name=$(node -p 'require("./package.json").name')
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "v$version" ]; then
-            echo "::error::tag $GITHUB_REF_NAME, but package.json says $version"; exit 1
-          fi
-          case "$name" in "$NPM_SCOPE"/*) ;; *) echo "::error::$name isn't under the repository variable NPM_SCOPE ($NPM_SCOPE)"; exit 1;; esac
       - name: Pack, and the checksums
         id: pack
         run: |
@@ -65,9 +91,37 @@ jobs:
           path: release/
           if-no-files-found: error
 
+  tag:
+    needs: [check, pack]
+    if: needs.check.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # the tag (a tag pushed with GITHUB_TOKEN starts no workflow)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the history to place a tag in
+          fetch-tags: true
+      - name: The tag v<version>
+        env:
+          TAG: v${{ needs.check.outputs.version }}
+        run: |
+          # A tag already on this commit or one before it (a re-run, or a tag pushed by hand): keep it. A tag on a
+          # commit that isn't this one's ancestor: stop. A tag is never moved.
+          if git rev-parse -q --verify "refs/tags/$TAG" > /dev/null; then
+            if git merge-base --is-ancestor "$TAG^{commit}" "$GITHUB_SHA"; then
+              echo "$TAG already tags $(git rev-parse --short "$TAG^{commit}"), an ancestor of $GITHUB_SHA: kept"
+            else
+              echo "::error::$TAG tags $(git rev-parse --short "$TAG^{commit}"), which isn't on main before this commit"; exit 1
+            fi
+          else
+            git tag "$TAG" "$GITHUB_SHA"
+            git push origin "refs/tags/$TAG"
+          fi
+
   publish:
-    if: github.ref_type == 'tag'
-    needs: pack
+    needs: [check, pack, tag]
     runs-on: ubuntu-latest # trusted publishing takes GitHub-hosted runners only
     timeout-minutes: 10
     permissions:
@@ -86,11 +140,12 @@ jobs:
           path: release
       - name: Check the tarball against its checksum
         run: cd release && sha256sum -c SHA256SUMS
+      # "./": without it, npm reads `release/<file>` as a GitHub repository (owner/name) and tries git over ssh
       - name: Publish it on npm
-        run: npm publish "release/${{ needs.pack.outputs.tarball }}" --access public
+        run: npm publish "./release/${{ needs.pack.outputs.tarball }}" --access public
 
   github-release:
-    needs: [pack, publish]
+    needs: [check, pack, publish]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -101,6 +156,7 @@ jobs:
           name: release
           path: release
       - name: The GitHub release, with the tarball and SHA256SUMS
-        run: gh release create "$GITHUB_REF_NAME" "release/${{ needs.pack.outputs.tarball }}" release/SHA256SUMS --repo "$GITHUB_REPOSITORY" --title "@michinarai/sdk $GITHUB_REF_NAME" --generate-notes --verify-tag
+        run: gh release create "$TAG" "release/${{ needs.pack.outputs.tarball }}" release/SHA256SUMS --repo "$GITHUB_REPOSITORY" --title "@michinarai/sdk $TAG" --generate-notes --verify-tag
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: v${{ needs.check.outputs.version }}
