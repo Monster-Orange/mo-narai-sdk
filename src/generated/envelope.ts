@@ -3,7 +3,24 @@
 /**
  * Every message between Narai's tool host and a tool (contract v1). A domain-neutral envelope; what a domain needs travels in a typed payload whose schema the manifest declares. No verdict field anywhere: a tool sends what the learner did, Narai judges.
  */
-export type ToolMessage = Hello | Connect | Start | Command | LocaleSwitch | Ready | Answer | Practice | Close;
+export type ToolMessage =
+  | Hello
+  | Connect
+  | Start
+  | Command
+  | CommandAck
+  | CommandError
+  | StateGet
+  | State
+  | StorageGet
+  | StorageSet
+  | StorageDelete
+  | StorageResult
+  | LocaleSwitch
+  | Ready
+  | Answer
+  | Practice
+  | Close;
 
 /**
  * Tool -> its parent window, once its SDK is listening: the host answers with the connect.
@@ -82,8 +99,174 @@ export interface Command {
    * Opaque, single use, expires. It stands in for the learner.
    */
   launch: string;
+  /**
+   * The tool answers it once: tool.command.ack or tool.command.error, `re` this id.
+   */
+  id: string;
   command: string;
   payload: Payload;
+}
+/**
+ * Tool -> Narai: the command named by `re` was carried out.
+ */
+export interface CommandAck {
+  type: "tool.command.ack";
+  /**
+   * The contract version.
+   */
+  v: 1;
+  /**
+   * Opaque, single use, expires. It stands in for the learner.
+   */
+  launch: string;
+  /**
+   * The sender's own id for a request.
+   */
+  re: string;
+}
+/**
+ * Tool -> Narai: the command named by `re` was not carried out, and why. (The host takes no answer in time as
+ * `failed`.)
+ */
+export interface CommandError {
+  type: "tool.command.error";
+  /**
+   * The contract version.
+   */
+  v: 1;
+  /**
+   * Opaque, single use, expires. It stands in for the learner.
+   */
+  launch: string;
+  /**
+   * The sender's own id for a request.
+   */
+  re: string;
+  code: "unknown_command" | "invalid_payload" | "unsupported" | "failed";
+  /**
+   * For the developer; never shown to a learner.
+   */
+  message?: string | null;
+}
+/**
+ * Narai -> tool: send your state now (tool.state, `re` this id).
+ */
+export interface StateGet {
+  type: "narai.tool.state.get";
+  /**
+   * The contract version.
+   */
+  v: 1;
+  /**
+   * Opaque, single use, expires. It stands in for the learner.
+   */
+  launch: string;
+  /**
+   * The sender's own id for a request.
+   */
+  id: string;
+}
+/**
+ * Tool -> Narai: what the tool shows, in the payload the manifest's `state` names; on every change, and in answer
+ * to narai.tool.state.get (`re`). Never anything about the learner: the envelope is closed, and the payload is the
+ * manifest's.
+ */
+export interface State {
+  type: "tool.state";
+  /**
+   * The contract version.
+   */
+  v: 1;
+  /**
+   * Opaque, single use, expires. It stands in for the learner.
+   */
+  launch: string;
+  re?: string | null;
+  payload: Payload;
+}
+/**
+ * Tool -> Narai: read a key of this launch's storage (the host scopes it to the tool and the launch).
+ */
+export interface StorageGet {
+  type: "tool.storage.get";
+  /**
+   * The contract version.
+   */
+  v: 1;
+  /**
+   * Opaque, single use, expires. It stands in for the learner.
+   */
+  launch: string;
+  /**
+   * The sender's own id for a request.
+   */
+  id: string;
+  key: string;
+}
+/**
+ * Tool -> Narai: write a key of this launch's storage: any JSON, at most STORAGE_VALUE_MAX bytes.
+ */
+export interface StorageSet {
+  type: "tool.storage.set";
+  /**
+   * The contract version.
+   */
+  v: 1;
+  /**
+   * Opaque, single use, expires. It stands in for the learner.
+   */
+  launch: string;
+  /**
+   * The sender's own id for a request.
+   */
+  id: string;
+  key: string;
+  value: unknown;
+}
+/**
+ * Tool -> Narai: remove a key of this launch's storage.
+ */
+export interface StorageDelete {
+  type: "tool.storage.delete";
+  /**
+   * The contract version.
+   */
+  v: 1;
+  /**
+   * Opaque, single use, expires. It stands in for the learner.
+   */
+  launch: string;
+  /**
+   * The sender's own id for a request.
+   */
+  id: string;
+  key: string;
+}
+/**
+ * Narai -> tool: the answer to a storage call (`re`), as Narai's store gives it: a get of a key is ok with its
+ * value; of a missing key, not ok, `not_found` (a stored JSON null stays distinct from no key). A set is ok, or
+ * `quota` past the launch's limits. A delete is ok, a missing key too (idempotent). `denied`: the launch is closed,
+ * expired or not the caller's.
+ */
+export interface StorageResult {
+  type: "narai.tool.storage.result";
+  /**
+   * The contract version.
+   */
+  v: 1;
+  /**
+   * Opaque, single use, expires. It stands in for the learner.
+   */
+  launch: string;
+  /**
+   * The sender's own id for a request.
+   */
+  re: string;
+  ok: boolean;
+  value?: {
+    [k: string]: unknown;
+  };
+  error?: ("quota" | "not_found" | "denied") | null;
 }
 /**
  * Narai -> tool, when the learner switches language mid-session.

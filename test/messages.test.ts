@@ -15,7 +15,7 @@ describe("checkMessage", () => {
   it("lets through what the manifest declares", () => {
     expect(reason(answer({ text: "hello" }))).toBeNull();
     expect(reason({ ...base, type: "tool.practice", activity: "drill", duration_s: 30, attempts: 4, payload: { schema: "echo.drill@1", said: 4 } })).toBeNull();
-    expect(reason({ ...base, type: "narai.tool.command", command: "highlight", payload: { schema: "echo.highlight@1", word: "hi" } }, { from: "host", launch: LAUNCH })).toBeNull();
+    expect(reason({ ...base, type: "narai.tool.command", id: "cmd_0001", command: "highlight", payload: { schema: "echo.highlight@1", word: "hi" } }, { from: "host", launch: LAUNCH })).toBeNull();
   });
 
   it.each([
@@ -39,8 +39,8 @@ describe("checkMessage", () => {
 
   it("refuses a command the manifest doesn't list, or in another payload", () => {
     const host = { from: "host", launch: LAUNCH } as const;
-    expect(reason({ ...base, type: "narai.tool.command", command: "navigate", payload: { schema: "echo.highlight@1" } }, host)).toMatch(/command navigate isn't in the manifest/);
-    expect(reason({ ...base, type: "narai.tool.command", command: "highlight", payload: { schema: "echo.drill@1" } }, host)).toMatch(/takes echo.highlight@1/);
+    expect(reason({ ...base, type: "narai.tool.command", id: "cmd_0001", command: "navigate", payload: { schema: "echo.highlight@1" } }, host)).toMatch(/command navigate isn't in the manifest/);
+    expect(reason({ ...base, type: "narai.tool.command", id: "cmd_0001", command: "highlight", payload: { schema: "echo.drill@1" } }, host)).toMatch(/takes echo.highlight@1/);
   });
 
   it("refuses a start in a preset or for a task the manifest doesn't declare", () => {

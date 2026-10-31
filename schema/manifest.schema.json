@@ -298,6 +298,19 @@
       "description": "the payload a step's preset is written in",
       "title": "Preset Schema"
     },
+    "state": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "the payload the tool's state is in (tool.state): what it shows, never the learner",
+      "title": "State"
+    },
     "answers": {
       "additionalProperties": {
         "type": "string"
