@@ -4,7 +4,7 @@
   "$defs": {
     "Capabilities": {
       "additionalProperties": false,
-      "description": "What the tool's frame may use; anything not listed here is not granted.",
+      "description": "What the tool's frame may use; anything not listed here is not granted. A device (`Grant`) is used only in a\nlaunch whose step grants it.",
       "properties": {
         "audio_out": {
           "default": false,
