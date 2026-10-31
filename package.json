@@ -17,6 +17,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./host": {
+      "types": "./dist/host-entry.d.ts",
+      "import": "./dist/host-entry.js"
+    },
     "./payloads": {
       "types": "./dist/payloads.d.ts",
       "import": "./dist/payloads.js"
