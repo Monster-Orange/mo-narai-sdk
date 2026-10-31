@@ -26,10 +26,26 @@ describe("@michinarai/sdk/testing", () => {
 });
 
 describe("forging onto the host's window (#10)", () => {
-  it("a second hello gets no second connect, and an answer posted around the port is never taken", async () => {
+  // Ward, 2026-10-31: a reload's hello from the tool's own frame, at its origin, reconnects it to the same launch; a hello
+  // from anywhere else is refused, and only one port is ever live.
+  it("a second hello from the tool's frame reconnects it on a new port; the old one is closed", async () => {
     const run = await launch(ECHO, { task: TASK });
     run.tool.ready("en");
-    run.postToHost({ type: "tool.hello", v: 1 });
+    const again = await run.reconnect();
+    expect(run.connects).toEqual(["https://echo.example", "https://echo.example"]);
+    expect(again.launch).toBe(run.tool.launch);
+    again.ready("en");
+    run.forgeOnOldPort({ type: "tool.answer", v: 1, launch: "lch_testlaunch01", task: TASK.id, payload: { schema: "echo.answer@1", text: "old port" } });
+    await run.settle();
+    expect(run.received.answers).toEqual([]);
+    run.close();
+  });
+
+  it("a hello from another page or origin gets no connect, and an answer posted around the port is never taken", async () => {
+    const run = await launch(ECHO, { task: TASK });
+    run.tool.ready("en");
+    run.postToHost({ type: "tool.hello", v: 1 }, { source: {} });
+    run.postToHost({ type: "tool.hello", v: 1 }, { origin: "https://evil.example" });
     run.postToHost({ type: "tool.answer", v: 1, launch: "lch_testlaunch01", task: TASK.id, payload: { schema: "echo.answer@1", text: "around" } });
     await run.settle();
     expect(run.connects).toEqual(["https://echo.example"]);

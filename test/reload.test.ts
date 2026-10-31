@@ -6,7 +6,7 @@ import { ECHO } from "./fixtures.js";
 // is still there. And the host reports each storage call with its answer (the harness records them).
 describe("a reloaded tool", () => {
   it("is connected again, to the same launch and its storage, and must say ready again", async () => {
-    const run = await launch(ECHO, { reconnect: true });
+    const run = await launch(ECHO);
     run.tool.ready("en");
     await run.tool.storage.set("kept", { bpm: 90 });
     const again = await run.reconnect();

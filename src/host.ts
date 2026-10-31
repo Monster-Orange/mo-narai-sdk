@@ -31,9 +31,6 @@ export interface MountOptions {
   onClose?: (message: Close) => void;
   /** The tool rendered a locale other than the learner's (`locale`): the host shows its fallback notice. */
   onFallback?: (fallback: { requested: string; rendered: string }) => void;
-  /** Take a second hello from the frame (it reloaded) and connect it again, to the same launch, on a new port. Off by
-   *  default: then only the first hello is ever answered (#10), and a reloaded tool stays unconnected. */
-  reconnect?: boolean;
   /** Every storage call the tool made, with the answer it got. */
   onStorage?: (call: StorageGet | StorageSet | StorageDelete, result: StorageResult) => void;
   /** Every command as it goes to the tool, with its id. */
@@ -113,8 +110,8 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
   let ready = false;
   const limit = options.practiceLimit ?? { burst: 10, perMinute: 6 };
   const practice = bucket(limit.burst, limit.perMinute, options.now ?? Date.now);
-  // with `reconnect`, one connection per hello: a tool frame that reloads says hello again, and gets a new port to the
-  // same launch (its storage, practice limit and pending requests carry on); it says ready again on it (sdk#19)
+  // one connection per hello from the tool's frame: a tool that reloads says hello again, and gets a new port to the same
+  // launch (its storage, practice limit and pending requests carry on); it says ready again on it (sdk#19)
   let channel!: Channel; // set by open(), which runs before anything is sent
   let port2!: Transferable;
   const open = () => {
@@ -204,8 +201,9 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
     if (event.source !== options.frame || event.origin !== origin) return;
     const checked = checkMessage(manifest, event.data, { from: "tool" });
     if (!checked.ok || checked.message.type !== "tool.hello") return;
-    if (handed && !options.reconnect) return; // only the first hello is answered (#10), unless the host reconnects
-    if (handed) { channel.close(); open(); channel.send(start); } // the frame reloaded: a new port, the same launch
+    // a second hello from this frame at its origin is a reload (Ward, 2026-10-31): the old port is closed, so only one
+    // is ever live, and the tool gets a new one to the same launch (its storage kept, the start replayed)
+    if (handed) { channel.close(); open(); channel.send(start); }
     handed = true;
     const connect: Connect = { type: "narai.tool.connect", v: CONTRACT_VERSION };
     options.frame.postMessage(connect, origin, [port2]);
