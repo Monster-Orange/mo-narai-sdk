@@ -12,3 +12,4 @@ export { httpStorage, memoryStorage, type FetchLike } from "./storage.js";
 export type { LaunchStorage, StorageAnswer } from "./tool.js";
 export { MUSIC_PAYLOADS, musicPayloads, type MusicNeckPreset, type MusicNeckState, type MusicNote, type MusicPlayed, type MusicTabPractice } from "./music.js";
 export { CONNECT_TIMEOUT_MS, NARAI_HOST_ORIGINS } from "./origins.js";
+export { pickLocale, type LocaleChain } from "./locale.js";

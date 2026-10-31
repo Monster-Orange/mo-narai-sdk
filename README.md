@@ -59,7 +59,7 @@ manifest's commands as the Tutor would. From code, it's `startHarness` (The harn
 ## The API, in one place
 
 ```ts
-import { connect, defineTool } from "@michinarai/sdk";
+import { connect, defineTool, pickLocale } from "@michinarai/sdk";
 
 const manifest = defineTool({ id: "you/echo", version: "0.1.0", sdk: "^1", /* … */ }); // throws a ManifestError, every reason
 // or a manifest kept as JSON: defineTool(json) checks it at runtime and returns a ToolManifest
@@ -73,8 +73,9 @@ tool.state({ schema: "echo.state@1", shown: "hello" });  // what the tool shows,
 //   sent on every change, and the latest answers Narai's requests. Never anything about the learner
 await tool.storage.set("last.tempo", { bpm: 90 }); // this launch's own storage, kept by Narai: a key, any JSON ≤ 16 KB
 await tool.storage.get("last.tempo");               // { ok: true, value } or { ok: false, error: "not_found" | "quota" | "denied" }
-tool.onLocale((message) => { /* the learner switched language */ });
-tool.ready("en");                 // rendered, in the locale actually shown
+const locale = pickLocale(tool.start, manifest.locales); // the first of the learner's locales the tool has, else its default
+tool.onLocale((message) => { /* the learner switched language: pickLocale(message, manifest.locales) */ });
+tool.ready(locale);               // rendered, in the locale actually shown
 tool.answer({ schema: "echo.answer@1", text: "hello" });   // what the learner did on the task; never a verdict
 tool.practice("drill", { duration_s: 30, attempts: 4, payload: { schema: "echo.drill@1", said: 4 } });
 tool.close("done");
