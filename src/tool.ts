@@ -69,7 +69,7 @@ export interface LaunchStorage {
 
 /** Say hello to the parent, wait for Narai's host to connect (on the window, from the parent, from a listed origin,
  *  once), then for the start. */
-export function connect(manifest: ToolManifest, options: ConnectOptions): Promise<ToolSession> {
+export function connect(manifest: ToolManifest, options: ConnectOptions = {}): Promise<ToolSession> {
   const win = options.window ?? (globalThis as unknown as { window: ToolWindow }).window;
   const refused = options.onRefused ?? (() => undefined);
   const hosts = options.hostOrigins ?? NARAI_HOST_ORIGINS;

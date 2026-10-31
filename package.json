@@ -1,6 +1,6 @@
 {
   "name": "@michinarai/sdk",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Build tools that run inside Narai lessons: the manifest, the embed runtime and a local test harness.",
   "license": "Apache-2.0",
   "repository": {

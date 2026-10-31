@@ -3,6 +3,15 @@
 0.x: the contract (the manifest, the wire, the registry's API) can still change between minor versions; this file says
 how. A version's entry lists what a tool or a host has to change, first.
 
+## 0.2.1
+
+Nothing to change.
+
+- `connect(manifest)` works with no options, as the README shows it. In 0.2.0 the options were required, and leaving
+  them out threw `Cannot read properties of undefined`.
+- The README is a front door: install, a first tool, how to run it, and links to the course, the CLI and Narai's own
+  tools.
+
 ## 0.2.0
 
 Nothing to change; one addition.
