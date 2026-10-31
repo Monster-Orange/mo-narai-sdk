@@ -31,6 +31,11 @@ export interface MountOptions {
   onClose?: (message: Close) => void;
   /** The tool rendered a locale other than the learner's (`locale`): the host shows its fallback notice. */
   onFallback?: (fallback: { requested: string; rendered: string }) => void;
+  /** Take a second hello from the frame (it reloaded) and connect it again, to the same launch, on a new port. Off by
+   *  default: then only the first hello is ever answered (#10), and a reloaded tool stays unconnected. */
+  reconnect?: boolean;
+  /** Every storage call the tool made, with the answer it got. */
+  onStorage?: (call: StorageGet | StorageSet | StorageDelete, result: StorageResult) => void;
   /** Every command as it goes to the tool, with its id. */
   onCommandSent?: (message: Command) => void;
   /** Every answer the tool gives a command (tool.command.ack or tool.command.error), whoever sent the command. */
@@ -104,12 +109,21 @@ export function toolOrigin(manifest: ToolManifest): string {
 
 /** Narai's side of one launch: hand the tool a port, start it, and take back only what its manifest declares. */
 export function mountTool(manifest: ToolManifest, options: MountOptions): HostSession {
-  const { port1, port2 } = options.channel?.() ?? new MessageChannel();
   const refused = options.onRefused ?? (() => undefined);
   let ready = false;
   const limit = options.practiceLimit ?? { burst: 10, perMinute: 6 };
   const practice = bucket(limit.burst, limit.perMinute, options.now ?? Date.now);
-  const channel = new Channel(port1, manifest, "host", () => ({ launch: options.launch, task: options.task, payloads: options.payloads }), refused);
+  // with `reconnect`, one connection per hello: a tool frame that reloads says hello again, and gets a new port to the
+  // same launch (its storage, practice limit and pending requests carry on); it says ready again on it (sdk#19)
+  let channel!: Channel; // set by open(), which runs before anything is sent
+  let port2!: Transferable;
+  const open = () => {
+    const ports = options.channel?.() ?? new MessageChannel();
+    port2 = ports.port2;
+    channel = new Channel(ports.port1, manifest, "host", () => ({ launch: options.launch, task: options.task, payloads: options.payloads }), refused);
+    ready = false;
+    channel.listen(receive);
+  };
   const wait = options.commandTimeoutMs ?? COMMAND_TIMEOUT_MS;
   let ids = 0;
   const nextId = (prefix: string) => `${prefix}_${(ids += 1)}`;
@@ -120,7 +134,7 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
     const timer = setTimeout(() => { map.delete(id); resolve(onTimeout); }, wait);
     map.set(id, (v) => { clearTimeout(timer); map.delete(id); resolve(v); });
   });
-  channel.listen((message: ToolMessage) => {
+  const receive = (message: ToolMessage) => {
     if (!ready && message.type !== "tool.ready" && message.type !== "tool.close") {
       refused({ reason: `${message.type} before tool.ready`, data: message });
       return;
@@ -155,13 +169,15 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
           : call.type === "tool.storage.get" ? store.get(options.launch, call.key)
           : call.type === "tool.storage.set" ? store.set(options.launch, call.key, call.value)
           : store.delete(options.launch, call.key);
+        const on = channel;
         done.catch(() => ({ ok: false as const, error: "denied" as const })).then((r) => {
-          if (channel.closed) return;
+          if (on.closed) return;
           // `value` is any JSON (the schema's `{}`); the generated type reads it as an object, hence the cast
           const result = r.ok
             ? { ...base, type: "narai.tool.storage.result", re: call.id, ok: true, ...("value" in r ? { value: r.value } : {}) }
             : { ...base, type: "narai.tool.storage.result", re: call.id, ok: false, error: r.error };
-          channel.send(result as StorageResult);
+          on.send(result as StorageResult);
+          options.onStorage?.(call, result as StorageResult);
         });
         break;
       }
@@ -173,25 +189,29 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
       }
       default: refused({ reason: `${message.type} isn't sent on the port`, data: message });
     }
-  });
+  };
   // The port goes over when the tool says hello (its SDK is listening by then), from this frame, at its origin. What's
   // sent on port1 before that waits in the port.
   const origin = toolOrigin(manifest);
   const win = options.window ?? (globalThis as unknown as { window: HostWindow }).window;
-  const onHello = (event: HelloEvent) => {
-    if (event.source !== options.frame || event.origin !== origin) return;
-    const checked = checkMessage(manifest, event.data, { from: "tool" });
-    if (!checked.ok || checked.message.type !== "tool.hello") return;
-    win.removeEventListener("message", onHello);
-    const connect: Connect = { type: "narai.tool.connect", v: CONTRACT_VERSION };
-    options.frame.postMessage(connect, origin, [port2]);
-  };
-  win.addEventListener("message", onHello);
   const base = { v: CONTRACT_VERSION, launch: options.launch } as const;
   const start: Start = { ...base, type: "narai.tool.start", locale: options.locale, fallback: options.fallback ?? [] };
   if (options.preset) start.preset = options.preset;
   if (options.conventions) start.conventions = options.conventions;
   if (options.task) start.task = options.task;
+  let handed = false;
+  const onHello = (event: HelloEvent) => {
+    if (event.source !== options.frame || event.origin !== origin) return;
+    const checked = checkMessage(manifest, event.data, { from: "tool" });
+    if (!checked.ok || checked.message.type !== "tool.hello") return;
+    if (handed && !options.reconnect) return; // only the first hello is answered (#10), unless the host reconnects
+    if (handed) { channel.close(); open(); channel.send(start); } // the frame reloaded: a new port, the same launch
+    handed = true;
+    const connect: Connect = { type: "narai.tool.connect", v: CONTRACT_VERSION };
+    options.frame.postMessage(connect, origin, [port2]);
+  };
+  win.addEventListener("message", onHello);
+  open();
   channel.send(start);
   return {
     command: (command, payload) => {

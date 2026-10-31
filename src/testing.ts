@@ -1,7 +1,7 @@
 // A tool's conformance kit (Node): its session against Narai's own host over a real MessageChannel, wired as a
 // browser wires an iframe, so a tool's tests launch it as a lesson does, and forge what a hostile page would.
 
-import type { Answer, Close, CommandAck, CommandError, Payload, Practice, Ready, State, Task } from "./generated/envelope.js";
+import type { Answer, Close, CommandAck, CommandError, Payload, Practice, Ready, State, StorageDelete, StorageGet, StorageResult, StorageSet, Task } from "./generated/envelope.js";
 import type { ToolManifest } from "./generated/manifest.js";
 import { mountTool, toolOrigin, type HelloEvent, type HostSession, type HostStorage, type HostWindow, type MountOptions, type ToolFrame } from "./host.js";
 import { memoryStorage } from "./storage.js";
@@ -60,6 +60,8 @@ export interface LaunchOptions {
   practiceLimit?: MountOptions["practiceLimit"];
   /** How long the host waits for a command's or a state request's answer (MountOptions). */
   commandTimeoutMs?: number;
+  /** The host takes a reloaded frame's hello (MountOptions.reconnect; default off, as Narai's host). */
+  reconnect?: boolean;
   /** The host's storage (default: a fresh memoryStorage()). */
   storage?: HostStorage;
   now?: () => number;
@@ -72,6 +74,8 @@ export interface Received {
   fallbacks: { requested: string; rendered: string }[];
   answers: Answer[];
   states: State[];
+  /** Every storage call the tool made, with the answer it got. */
+  storage: { call: StorageGet | StorageSet | StorageDelete; result: StorageResult }[];
   commandAnswers: (CommandAck | CommandError)[];
   practice: Practice[];
   closes: Close[];
@@ -94,6 +98,9 @@ export interface Launched {
   postToHost: ReturnType<typeof browserPair>["postToHost"];
   /** The origins the host has posted a connect to (one, at the tool's origin, after the hello). */
   connects: readonly string[];
+  /** The tool frame reloaded: its SDK says hello again; with `reconnect`, it gets a new port to the same launch (its
+   *  storage still there), else no answer. */
+  reconnect(): Promise<ToolSession>;
   /** Lets every message in flight arrive. */
   settle(): Promise<void>;
   close(): void;
@@ -103,8 +110,11 @@ export interface Launched {
  *  host checks payload bodies against the manifest's schemas. */
 export async function launch(manifest: ToolManifest, options: LaunchOptions = {}): Promise<Launched> {
   const pair = browserPair(manifest);
-  const channel = new MessageChannel();
-  const received: Received = { ready: [], fallbacks: [], answers: [], states: [], commandAnswers: [], practice: [], closes: [], refused: [] };
+  // a channel per connection: a reloaded tool (reconnect) gets a new one; forge and forgeToTool use the latest
+  let channel = new MessageChannel();
+  const channels = [channel];
+  let first = true;
+  const received: Received = { ready: [], fallbacks: [], answers: [], states: [], commandAnswers: [], storage: [], practice: [], closes: [], refused: [] };
   const toolRefused: Refusal[] = [];
   const connected = connect(manifest, { hostOrigins: [HOST_ORIGIN], window: pair.toolWindow, onRefused: (r) => toolRefused.push(r) });
   const mount: MountOptions = {
@@ -118,14 +128,20 @@ export async function launch(manifest: ToolManifest, options: LaunchOptions = {}
     onAnswer: (m) => received.answers.push(m),
     onState: (m) => received.states.push(m),
     onCommandAnswer: (m) => received.commandAnswers.push(m),
+    onStorage: (call, result) => received.storage.push({ call, result }),
     onPractice: (m) => received.practice.push(m),
     onClose: (m) => received.closes.push(m),
     onRefused: (r) => received.refused.push(r),
     payloads: payloadChecks(manifest),
-    channel: () => channel as unknown as { port1: PortLike; port2: Transferable },
+    // the first connection's channel is made up front (forge works before the hello); each later one is new
+    channel: () => {
+      if (!first) channels.push((channel = new MessageChannel()));
+      first = false;
+      return channel as unknown as { port1: PortLike; port2: Transferable };
+    },
   };
   mount.storage = options.storage ?? memoryStorage();
-  for (const key of ["task", "preset", "conventions", "practiceLimit", "commandTimeoutMs", "now"] as const) {
+  for (const key of ["task", "preset", "conventions", "practiceLimit", "commandTimeoutMs", "reconnect", "now"] as const) {
     if (options[key] !== undefined) (mount as unknown as Record<string, unknown>)[key] = options[key];
   }
   const host = mountTool(manifest, mount);
@@ -139,6 +155,7 @@ export async function launch(manifest: ToolManifest, options: LaunchOptions = {}
     postToHost: pair.postToHost,
     connects: pair.posted,
     settle,
-    close: () => { host.close(); channel.port1.close(); channel.port2.close(); },
+    reconnect: () => connect(manifest, { hostOrigins: [HOST_ORIGIN], window: pair.toolWindow, onRefused: (r) => toolRefused.push(r) }),
+    close: () => { host.close(); for (const c of channels) { c.port1.close(); c.port2.close(); } },
   };
 }
