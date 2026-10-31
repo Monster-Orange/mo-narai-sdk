@@ -45,6 +45,11 @@ afterAll(async () => {
 });
 
 describe("the harness", () => {
+  it("answers at localhost whichever address it resolves to: the IPv4 one every client falls back to too", async () => {
+    // where localhost resolves to ::1 first (macOS, Docker), a host bound to "localhost" refused 127.0.0.1
+    const port = new URL(harness.hostUrl).port;
+    expect((await fetch(`http://127.0.0.1:${port}/`)).status).toBe(200);
+  });
   it("mounts the tool on another origin, sandboxed, where it can't reach the host", async () => {
     expect(new URL(harness.hostUrl).hostname).toBe("localhost");
     expect(new URL(tool.url()).hostname).toBe("127.0.0.1");

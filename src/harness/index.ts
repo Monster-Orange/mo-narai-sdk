@@ -125,7 +125,9 @@ export async function startHarness(options: HarnessOptions): Promise<Harness> {
       res.writeHead(404).end();
     }
   });
-  const hostPort = await listen(hostServer, options.hostPort ?? 0, "localhost");
+  // named localhost (another origin than the tool's 127.0.0.1), bound on 127.0.0.1: "localhost" binds whatever it
+  // resolves to first, ::1 on macOS and in Docker, which refused every client that reached it over IPv4
+  const hostPort = await listen(hostServer, options.hostPort ?? 0, "127.0.0.1");
   const close = (s: Server) => new Promise<void>((ok) => { s.closeAllConnections(); s.close(() => ok()); });
   return {
     hostUrl: `http://localhost:${hostPort}/`,

@@ -38,6 +38,8 @@ Narai's now. A manifest that declares one with its own schema is refused: declar
   plus the played notes nothing took (`extras`). A note without a pitch (a tap) matches on time alone, and an expected
   note without `at_ms` (a one-note target) is untimed: a hit, wrong_pitch or missed, never early or late. It runs
   Narai's own cases, `schema/music_match.cases.json`, so the two agree. Narai still decides: a tool never sends it.
+- The harness answers at `localhost` wherever that resolves to `::1` first (macOS, Docker): its host page was bound to
+  `::1` alone there, and refused a client that reached it over IPv4.
 - `schema/openapi.tools.json` adds a launch's storage (`/api/tools/launches/{launch}/storage/{key}`) and the slug rule.
 
 ## 0.2.1
