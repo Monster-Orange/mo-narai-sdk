@@ -3,6 +3,15 @@
 0.x: the contract (the manifest, the wire, the registry's API) can still change between minor versions; this file says
 how. A version's entry lists what a tool or a host has to change, first.
 
+## 0.2.0
+
+Nothing to change; one addition.
+
+- `pickLocale(chain, declared, fallback?)`: the locale a tool shows. It returns the first entry of the host's chain the
+  tool declares, the exact tag before its base language (`ja-JP` → `ja`), case-insensitively. Otherwise it returns
+  `fallback`, else the manifest's first locale (English for a manifest without `locales`). The chain can be the start
+  or a locale switch as it arrives: `pickLocale(tool.start, manifest.locales)`.
+
 ## 0.1.1
 
 Nothing to change: the code and the contract are 0.1.0's.
