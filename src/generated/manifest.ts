@@ -17,6 +17,16 @@ export interface ToolManifest {
    */
   sdk: string;
   publisher: Publisher;
+  /**
+   * the tool's name as a learner reads it, by language: Narai shows the learner's, else any, else the id's tool slug title-cased
+   */
+  name?: {
+    /**
+     * This interface was referenced by `undefined`'s JSON-Schema definition
+     * via the `patternProperty` "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$".
+     */
+    [k: string]: string;
+  } | null;
   surfaces: Surfaces;
   /**
    * family.name@N -> the JSON Schema of that payload

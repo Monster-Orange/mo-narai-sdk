@@ -115,3 +115,26 @@ describe("the registry's rules, checked before an upload", () => {
     ]);
   });
 });
+
+// A tool's name, by language: the publisher's, which Narai shows the learner in their language (else any, else the id's
+// slug, title-cased). Optional; additive.
+describe("a manifest's name", () => {
+  it("is optional, and by language when given", () => {
+    expect(manifestProblems(echo())).toEqual([]);
+    expect(manifestProblems({ ...echo(), name: { en: "Fretboard", ja: "フレットボード", "pt-BR": "Braço" } })).toEqual([]);
+    expect(defineTool({ ...echo(), name: { en: "Echo" } }).name).toEqual({ en: "Echo" });
+  });
+
+  it.each([
+    ["a key that isn't a language tag", { English: "Echo" }],
+    ["an empty name", { en: "" }],
+    ["a name over 64 characters", { en: "x".repeat(65) }],
+    ["a name on two lines", { en: "Echo\nTwo" }],
+    ["a name with a space either end", { en: " Echo" }],
+    ["more than 20 languages", Object.fromEntries(Array.from({ length: 21 }, (_, i) => [`l${String.fromCharCode(97 + i)}`, "Echo"]))],
+  ])("refuses %s", (_, name) => {
+    const problems = manifestProblems({ ...echo(), name });
+    expect(problems).not.toEqual([]);
+    expect(problems.filter((p) => !p.startsWith("/name"))).toEqual([]);
+  });
+});

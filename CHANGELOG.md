@@ -7,6 +7,9 @@ how. A version's entry lists what a tool or a host has to change, first.
 
 Nothing to change.
 
+- A manifest can carry its tool's `name` by language, `{ "en": "Fretboard", "ja": "フレットボード" }`: up to 20
+  language tags, each a name of at most 64 characters on one line, with no space at either end. It's optional. Narai
+  shows the learner's language, else the fallback, else any, else the id's tool slug title-cased.
 - `musicMatch(expected, played, { ..., ordered: true })`: an ordered passage, its notes with no `at_ms`, played in
   order at any pace (`timingMs` is unused). Each note, in the passage's order, is a hit on the earliest unused note of
   its pitch after the last hit; a note still open is a wrong_pitch on the earliest unused note between its neighbours'

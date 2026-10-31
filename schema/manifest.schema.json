@@ -279,6 +279,29 @@
     "publisher": {
       "$ref": "#/$defs/Publisher"
     },
+    "name": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "maxProperties": 20,
+          "patternProperties": {
+            "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[^\\s\\x00-\\x1f\\x7f](?:[^\\x00-\\x1f\\x7f]*[^\\s\\x00-\\x1f\\x7f])?$",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "the tool's name as a learner reads it, by language: Narai shows the learner's, else any, else the id's tool slug title-cased",
+      "title": "Name"
+    },
     "surfaces": {
       "$ref": "#/$defs/Surfaces"
     },
