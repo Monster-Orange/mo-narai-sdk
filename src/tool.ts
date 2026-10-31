@@ -1,7 +1,7 @@
-import type { Answer, Command, Connect, Hello, LocaleSwitch, Payload, Start, Task, ToolMessage } from "./generated/envelope.js";
+import type { Answer, Command, CommandError, Connect, Hello, LocaleSwitch, Payload, Start, StateGet, Task, ToolMessage } from "./generated/envelope.js";
 import type { ToolManifest } from "./generated/manifest.js";
 import { checkMessage, CONTRACT_VERSION, type PayloadCheck } from "./messages.js";
-import { Channel, type PortLike, type Refusal } from "./port.js";
+import { Channel, ToolMessageError, type PortLike, type Refusal } from "./port.js";
 
 export interface ConnectOptions {
   /** The origins Narai's host may be on (e.g. `https://michinar.ai`); a connect from anywhere else is ignored. A tool
@@ -42,8 +42,12 @@ export interface ToolSession {
   /** Practice outside a task: an activity the manifest declares. */
   practice(activity: string, report: PracticeReport): void;
   close(reason: "done" | "user" | "error"): void;
-  /** A command the manifest declares; one it doesn't is never delivered. */
-  onCommand(command: string, handler: (payload: Payload, message: Command) => void): void;
+  /** A command the manifest declares; one it doesn't is never delivered (Narai is told: `unknown_command`). Narai is
+   *  answered once the handler is done: an ack, or an error when it throws (`failed`; a CommandRefused says its own code). */
+  onCommand(command: string, handler: (payload: Payload, message: Command) => void | Promise<void>): void;
+  /** What the tool shows now, in the payload the manifest's `state` names: sent to Narai, and kept to answer its
+   *  requests. Never anything about the learner. */
+  state(payload: Payload): void;
   onLocale(handler: (message: LocaleSwitch) => void): void;
 }
 
@@ -91,11 +95,33 @@ export function session(
 ): Promise<ToolSession> {
   const refused = options.onRefused ?? (() => undefined);
   let start: Start | undefined;
-  const commands = new Map<string, (payload: Payload, message: Command) => void>();
+  const commands = new Map<string, (payload: Payload, message: Command) => void | Promise<void>>();
+  let shown: Payload | undefined;
   // a command that arrives before the tool hands it a handler waits for one
   const held: Command[] = [];
   let onLocale: ((message: LocaleSwitch) => void) | undefined;
-  const channel = new Channel(port, manifest, "tool", () => ({ launch: start?.launch, task: start?.task ?? undefined, payloads: options.payloads }), refused);
+  const channel: Channel = new Channel(port, manifest, "tool", () => ({ launch: start?.launch, task: start?.task ?? undefined, payloads: options.payloads }), (r) => {
+    refused(r);
+    // a command Narai sent that the contract refuses is still answered: which one, and why it never ran
+    const c = r.data as Partial<Command> | null;
+    if (start && c?.type === "narai.tool.command" && typeof c.id === "string" && c.launch === start.launch) {
+      answerCommand(c.id, { code: /isn't in the manifest/.test(r.reason) ? "unknown_command" : "invalid_payload", message: r.reason.slice(0, 500) });
+    }
+  });
+  const answerCommand = (re: string, error?: { code: CommandError["code"]; message?: string }) => {
+    if (!start || channel.closed) return;
+    const base = { v: CONTRACT_VERSION, launch: start.launch, re } as const;
+    channel.send(error ? { ...base, type: "tool.command.error", ...error } : { ...base, type: "tool.command.ack" });
+  };
+  // the handler runs at once (as it always has); its answer goes when it's done, or when it fails
+  const run = (handler: (payload: Payload, message: Command) => void | Promise<void>, command: Command) => {
+    const fail = (e: unknown) => answerCommand(command.id, e instanceof CommandRefused
+      ? { code: e.code, message: e.message.slice(0, 500) }
+      : { code: "failed", message: String((e as Error)?.message ?? e).slice(0, 500) });
+    let done: void | Promise<void>;
+    try { done = handler(command.payload, command); } catch (e) { fail(e); return; }
+    Promise.resolve(done).then(() => answerCommand(command.id), fail);
+  };
   return new Promise((resolve) => {
     channel.listen((message: ToolMessage) => {
       if (!start) {
@@ -107,8 +133,10 @@ export function session(
       if (message.type === "narai.tool.command") {
         const command = message as Command;
         const handler = commands.get(command.command);
-        if (handler) handler(command.payload, command);
+        if (handler) run(handler, command);
         else held.push(command);
+      } else if (message.type === "narai.tool.state.get") {
+        if (shown) channel.send({ v: CONTRACT_VERSION, launch: start.launch, type: "tool.state", re: (message as StateGet).id, payload: shown });
       } else if (message.type === "narai.tool.locale") onLocale?.(message as LocaleSwitch);
       else refused({ reason: `${message.type} after the start`, data: message });
     });
@@ -133,10 +161,23 @@ export function session(
         commands.set(command, handler);
         for (const waiting of held.filter((c) => c.command === command)) {
           held.splice(held.indexOf(waiting), 1);
-          handler(waiting.payload, waiting);
+          run(handler, waiting);
         }
+      },
+      state: (payload) => {
+        if (payload.schema !== manifest.state) throw new ToolMessageError(`state is ${manifest.state ?? "not declared"}, not ${payload.schema}`);
+        channel.send({ ...base, type: "tool.state", payload });
+        shown = payload;
       },
       onLocale: (handler) => { onLocale = handler; },
     };
+  }
+}
+
+/** Thrown by a command's handler: Narai is told this code (not `failed`) and the message, for the developer. */
+export class CommandRefused extends Error {
+  constructor(readonly code: "unsupported" | "invalid_payload" | "failed", message?: string) {
+    super(message ?? code);
+    this.name = "CommandRefused";
   }
 }

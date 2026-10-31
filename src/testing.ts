@@ -1,12 +1,13 @@
 // A tool's conformance kit (Node): its session against Narai's own host over a real MessageChannel, wired as a
 // browser wires an iframe, so a tool's tests launch it as a lesson does, and forge what a hostile page would.
 
-import type { Answer, Close, Payload, Practice, Ready, Task } from "./generated/envelope.js";
+import type { Answer, Close, CommandAck, CommandError, Payload, Practice, Ready, State, Task } from "./generated/envelope.js";
 import type { ToolManifest } from "./generated/manifest.js";
 import { mountTool, toolOrigin, type HelloEvent, type HostSession, type HostWindow, type MountOptions, type ToolFrame } from "./host.js";
 import { payloadChecks } from "./payloads.js";
 import type { PortLike, Refusal } from "./port.js";
 import { connect, type ConnectEvent, type ToolSession, type ToolWindow } from "./tool.js";
+export { CommandRefused } from "./tool.js";
 
 /** Narai's address, as the host the kit plays. */
 export const HOST_ORIGIN = "https://michinar.ai";
@@ -55,6 +56,8 @@ export interface LaunchOptions {
   conventions?: Payload;
   /** The host's practice limit (MountOptions). */
   practiceLimit?: MountOptions["practiceLimit"];
+  /** How long the host waits for a command's or a state request's answer (MountOptions). */
+  commandTimeoutMs?: number;
   now?: () => number;
 }
 
@@ -62,6 +65,8 @@ export interface LaunchOptions {
 export interface Received {
   ready: Ready[];
   answers: Answer[];
+  states: State[];
+  commandAnswers: (CommandAck | CommandError)[];
   practice: Practice[];
   closes: Close[];
   refused: Refusal[];
@@ -75,6 +80,8 @@ export interface Launched {
   toolRefused: Refusal[];
   /** Writes straight to the tool's end of the port, around the SDK: what a tool that skips it would send. */
   forge(message: unknown): void;
+  /** Writes straight to the host's end of the port, around the SDK: what another host could send the tool. */
+  forgeToTool(message: unknown): void;
   /** Posts on the tool's window, as another page could. */
   postToTool: ReturnType<typeof browserPair>["postToTool"];
   /** Posts on the host's window, as the frame (by default) or another page could. */
@@ -91,7 +98,7 @@ export interface Launched {
 export async function launch(manifest: ToolManifest, options: LaunchOptions = {}): Promise<Launched> {
   const pair = browserPair(manifest);
   const channel = new MessageChannel();
-  const received: Received = { ready: [], answers: [], practice: [], closes: [], refused: [] };
+  const received: Received = { ready: [], answers: [], states: [], commandAnswers: [], practice: [], closes: [], refused: [] };
   const toolRefused: Refusal[] = [];
   const connected = connect(manifest, { hostOrigins: [HOST_ORIGIN], window: pair.toolWindow, onRefused: (r) => toolRefused.push(r) });
   const mount: MountOptions = {
@@ -102,13 +109,15 @@ export async function launch(manifest: ToolManifest, options: LaunchOptions = {}
     fallback: options.fallback ?? [],
     onReady: (m) => received.ready.push(m),
     onAnswer: (m) => received.answers.push(m),
+    onState: (m) => received.states.push(m),
+    onCommandAnswer: (m) => received.commandAnswers.push(m),
     onPractice: (m) => received.practice.push(m),
     onClose: (m) => received.closes.push(m),
     onRefused: (r) => received.refused.push(r),
     payloads: payloadChecks(manifest),
     channel: () => channel as unknown as { port1: PortLike; port2: Transferable },
   };
-  for (const key of ["task", "preset", "conventions", "practiceLimit", "now"] as const) {
+  for (const key of ["task", "preset", "conventions", "practiceLimit", "commandTimeoutMs", "now"] as const) {
     if (options[key] !== undefined) (mount as unknown as Record<string, unknown>)[key] = options[key];
   }
   const host = mountTool(manifest, mount);
@@ -117,6 +126,7 @@ export async function launch(manifest: ToolManifest, options: LaunchOptions = {}
   return {
     tool, host, received, toolRefused,
     forge: (message) => channel.port2.postMessage(message),
+    forgeToTool: (message) => channel.port1.postMessage(message),
     postToTool: pair.postToTool,
     postToHost: pair.postToHost,
     connects: pair.posted,

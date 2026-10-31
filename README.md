@@ -26,7 +26,11 @@ const manifest = defineTool({ id: "you/echo", version: "0.1.0", sdk: "^1", /* â€
 const tool = await connect(manifest, { hostOrigins: ["https://michinar.ai"] });
 
 tool.start;                       // the locale, its fallbacks, the step's preset, the task (if Narai judges one)
-tool.onCommand("highlight", (payload) => { /* only commands the manifest declares arrive */ });
+tool.onCommand("highlight", async (payload) => { /* only commands the manifest declares arrive */ });
+//   Narai is answered once the handler is done: an ack, or an error when it throws (`failed`);
+//   throw new CommandRefused("unsupported", "No capo on this neck.") to say why it wasn't done
+tool.state({ schema: "echo.state@1", shown: "hello" });  // what the tool shows, in the manifest's `state` payload;
+//   sent on every change, and the latest answers Narai's requests. Never anything about the learner
 tool.onLocale((message) => { /* the learner switched language */ });
 tool.ready("en");                 // rendered, in the locale actually shown
 tool.answer({ schema: "echo.answer@1", text: "hello" });   // what the learner did on the task; never a verdict
@@ -52,6 +56,11 @@ the **body only**: the SDK takes `schema` off before checking it, so a schema th
 
 Narai's host takes a burst of 10 `tool.practice`, then 6 a minute, per launch: batch practice (the excess is refused,
 and counted).
+
+Every `narai.tool.command` carries an `id`, and the tool answers it once: `tool.command.ack`, or `tool.command.error`
+with a code (`unknown_command`, `invalid_payload`, `unsupported`, `failed`). The SDK sends these for you; a host's
+`command()` resolves to the answer, and to `failed` after `COMMAND_TIMEOUT_MS` (10 s) with none. `narai.tool.state.get`
+asks for the tool's state, which comes back as `tool.state` naming the request (`re`).
 
 `@michinarai/sdk/payloads` checks payload bodies against the JSON Schemas the manifest declares (it compiles them, so it's
 for the host, the harness and the CLI, where eval is allowed).

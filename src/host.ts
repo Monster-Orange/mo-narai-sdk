@@ -1,4 +1,4 @@
-import type { Answer, Close, Connect, Payload, Practice, Ready, Start, Task, ToolMessage } from "./generated/envelope.js";
+import type { Answer, Close, CommandAck, CommandError, Connect, Payload, Practice, Ready, Start, State, Task, ToolMessage } from "./generated/envelope.js";
 import type { ToolManifest } from "./generated/manifest.js";
 import { checkMessage, CONTRACT_VERSION, type PayloadCheck } from "./messages.js";
 import { Channel, type PortLike, type Refusal } from "./port.js";
@@ -29,6 +29,12 @@ export interface MountOptions {
   onAnswer?: (message: Answer) => void;
   onPractice?: (message: Practice) => void;
   onClose?: (message: Close) => void;
+  /** Every answer the tool gives a command (tool.command.ack or tool.command.error), whoever sent the command. */
+  onCommandAnswer?: (message: CommandAck | CommandError) => void;
+  /** The tool's state (tool.state): on every change, and in answer to requestState(). */
+  onState?: (message: State) => void;
+  /** How long a command or a state request waits for the tool's answer (ms; default COMMAND_TIMEOUT_MS). */
+  commandTimeoutMs?: number;
   /** A message the tool sent that the contract refuses; it never reaches a handler. */
   onRefused?: (refusal: Refusal) => void;
   /** Checks payload bodies against the manifest's schemas (`payloadChecks(manifest)`); Narai's host always passes it. */
@@ -42,9 +48,17 @@ export interface MountOptions {
   channel?: () => { port1: PortLike; port2: Transferable };
 }
 
+/** The tool's answer to a command: done, or not, with the tool's code (`failed` when no answer came in time). */
+export type CommandResult = { ok: true } | { ok: false; code: CommandError["code"]; message?: string };
+
+/** How long the host waits for a command's or a state request's answer. */
+export const COMMAND_TIMEOUT_MS = 10_000;
+
 export interface HostSession {
-  /** A command the manifest declares (others throw: they're never sent). */
-  command(command: string, payload: Payload): void;
+  /** A command the manifest declares (others throw: they're never sent), answered once by the tool. */
+  command(command: string, payload: Payload): Promise<CommandResult>;
+  /** Ask the tool for its state now (narai.tool.state.get): its latest tool.state. Rejects when none comes in time. */
+  requestState(): Promise<Payload>;
   locale(locale: string, fallback?: string[]): void;
   close(): void;
 }
@@ -80,6 +94,16 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
   const limit = options.practiceLimit ?? { burst: 10, perMinute: 6 };
   const practice = bucket(limit.burst, limit.perMinute, options.now ?? Date.now);
   const channel = new Channel(port1, manifest, "host", () => ({ launch: options.launch, task: options.task, payloads: options.payloads }), refused);
+  const wait = options.commandTimeoutMs ?? COMMAND_TIMEOUT_MS;
+  let ids = 0;
+  const nextId = (prefix: string) => `${prefix}_${(ids += 1)}`;
+  // what the host is waiting for, by the id it sent: a command's answer, a state request's
+  const commands = new Map<string, (result: CommandResult) => void>();
+  const states = new Map<string, (payload: Payload | null) => void>();
+  const pending = <T>(map: Map<string, (v: T) => void>, id: string, onTimeout: T) => new Promise<T>((resolve) => {
+    const timer = setTimeout(() => { map.delete(id); resolve(onTimeout); }, wait);
+    map.set(id, (v) => { clearTimeout(timer); map.delete(id); resolve(v); });
+  });
   channel.listen((message: ToolMessage) => {
     if (!ready && message.type !== "tool.ready" && message.type !== "tool.close") {
       refused({ reason: `${message.type} before tool.ready`, data: message });
@@ -93,6 +117,19 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
         else refused({ reason: `practice over the limit (${limit.burst}, then ${limit.perMinute} a minute)`, data: message });
         break;
       case "tool.close": options.onClose?.(message as Close); channel.close(); break;
+      case "tool.command.ack": options.onCommandAnswer?.(message as CommandAck); commands.get((message as CommandAck).re)?.({ ok: true }); break;
+      case "tool.command.error": {
+        const e = message as CommandError;
+        options.onCommandAnswer?.(e);
+        commands.get(e.re)?.({ ok: false, code: e.code, ...(e.message ? { message: e.message } : {}) });
+        break;
+      }
+      case "tool.state": {
+        const s = message as State;
+        options.onState?.(s);
+        if (s.re) states.get(s.re)?.(s.payload);
+        break;
+      }
       default: refused({ reason: `${message.type} isn't sent on the port`, data: message });
     }
   });
@@ -116,7 +153,18 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
   if (options.task) start.task = options.task;
   channel.send(start);
   return {
-    command: (command, payload) => channel.send({ ...base, type: "narai.tool.command", command, payload }),
+    command: (command, payload) => {
+      const id = nextId("cmd");
+      channel.send({ ...base, type: "narai.tool.command", id, command, payload });
+      return pending<CommandResult>(commands, id, { ok: false, code: "failed", message: "no answer in time" });
+    },
+    requestState: async () => {
+      const id = nextId("req");
+      channel.send({ ...base, type: "narai.tool.state.get", id });
+      const payload = await pending<Payload | null>(states, id, null);
+      if (!payload) throw new Error("the tool sent no state in time");
+      return payload;
+    },
     locale: (locale, fallback = []) => channel.send({ ...base, type: "narai.tool.locale", locale, fallback }),
     close: () => { win.removeEventListener("message", onHello); channel.close(); },
   };
