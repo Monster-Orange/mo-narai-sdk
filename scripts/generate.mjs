@@ -84,6 +84,17 @@ export async function generate() {
   code = code.replace(/require\("ajv\/dist\/runtime\/equal"\)\.default/g, "equal").replace(/require\("ajv\/dist\/runtime\/ucs2length"\)\.default/g, "ucs2length");
   if (/require\(/.test(code)) throw new Error("the standalone validators still require() something: " + code.match(/require\([^)]*\)/)[0]);
   code = code.replace(/^"use strict";/, "");
+  // Narai's music payloads (schema/music.schema.json): each one's type, and the schemas as data, declared unchanged
+  const music = read("music.schema.json").payloads;
+  const types = [];
+  for (const [ref, schema] of Object.entries(music)) {
+    const name = "Music" + ref.slice("music.".length).replace(/@\d+$/, "").replace(/(^|-)([a-z])/g, (_, __, c) => c.toUpperCase());
+    types.push(await compile(forTypes(schema), name, { bannerComment: "", additionalProperties: false, format: true, style: { printWidth: 120 } }));
+  }
+  files["music.ts"] = `${BANNER}${types.join("\n")}
+/** Narai's music payloads, ref -> the JSON Schema of the body, exactly as Narai defines them. */
+export const MUSIC_PAYLOADS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = ${JSON.stringify(music, null, 2)};
+`;
   const verdicts = read("verdicts.json").fields;
   files["verdicts.ts"] = `${BANNER}/** The property names no answer payload may carry (schema/verdicts.json, the list Narai's registry reads). */
 export const VERDICT_FIELDS: readonly string[] = ${JSON.stringify(verdicts)};
