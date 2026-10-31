@@ -131,6 +131,8 @@ describe("a manifest's name", () => {
     ["a name over 64 characters", { en: "x".repeat(65) }],
     ["a name on two lines", { en: "Echo\nTwo" }],
     ["a name with a space either end", { en: " Echo" }],
+    ["a C1 control (NEL is whitespace to Python, not to JavaScript)", { en: "Fret\u0085board" }],
+    ["a C1 control at the end", { en: "Fretboard\u009f" }],
     ["more than 20 languages", Object.fromEntries(Array.from({ length: 21 }, (_, i) => [`l${String.fromCharCode(97 + i)}`, "Echo"]))],
   ])("refuses %s", (_, name) => {
     const problems = manifestProblems({ ...echo(), name });
