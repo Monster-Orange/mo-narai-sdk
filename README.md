@@ -6,7 +6,7 @@ A tool is a small web app that Narai mounts in a sandboxed frame on its own orig
 instrument (a fretboard, a color wheel, a construction canvas) and reports what the learner did. Narai keeps the
 answer keys, runs every judge and owns the learner model: a tool never grades and never learns who the learner is.
 
-- **Learn it:** the course [Build a tool for Narai](https://michinar.ai/go/course/narai-tools) goes from an empty folder
+- **Learn it:** the course [Build a tool for Narai](https://beta.michinar.ai/go/course/narai-tools) goes from an empty folder
   to your first tool, one step at a time.
 - **Start one:** the command line, [`@michinarai/cli`](https://github.com/Monster-Orange/mo-narai-cli) (`narai init`,
   `narai dev`, `narai validate`, `narai build`).
