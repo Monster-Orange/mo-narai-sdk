@@ -31,6 +31,8 @@ tool.onCommand("highlight", async (payload) => { /* only commands the manifest d
 //   throw new CommandRefused("unsupported", "No capo on this neck.") to say why it wasn't done
 tool.state({ schema: "echo.state@1", shown: "hello" });  // what the tool shows, in the manifest's `state` payload;
 //   sent on every change, and the latest answers Narai's requests. Never anything about the learner
+await tool.storage.set("last.tempo", { bpm: 90 }); // this launch's own storage, kept by Narai: a key, any JSON ≤ 16 KB
+await tool.storage.get("last.tempo");               // { ok: true, value } or { ok: false, error: "not_found" | "quota" | "denied" }
 tool.onLocale((message) => { /* the learner switched language */ });
 tool.ready("en");                 // rendered, in the locale actually shown
 tool.answer({ schema: "echo.answer@1", text: "hello" });   // what the learner did on the task; never a verdict
@@ -61,6 +63,11 @@ Every `narai.tool.command` carries an `id`, and the tool answers it once: `tool.
 with a code (`unknown_command`, `invalid_payload`, `unsupported`, `failed`). The SDK sends these for you; a host's
 `command()` resolves to the answer, and to `failed` after `COMMAND_TIMEOUT_MS` (10 s) with none. `narai.tool.state.get`
 asks for the tool's state, which comes back as `tool.state` naming the request (`re`).
+
+A launch's storage: `tool.storage.get|set|delete` and Narai's `narai.tool.storage.result`. The host keeps it under its own
+launch, never one the tool names; keys are `^[a-z0-9._-]{1,64}$`, a value is any JSON up to 16 KB, and a launch holds at
+most 64 keys and 256 KB. A host passes `storage` to `mountTool`: `httpStorage({ base })` over Narai's API, or
+`memoryStorage()` (the harness's).
 
 `@michinarai/sdk/payloads` checks payload bodies against the JSON Schemas the manifest declares (it compiles them, so it's
 for the host, the harness and the CLI, where eval is allowed).

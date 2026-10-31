@@ -1,4 +1,4 @@
-import type { Answer, Command, CommandError, Connect, Hello, LocaleSwitch, Payload, Start, StateGet, Task, ToolMessage } from "./generated/envelope.js";
+import type { Answer, Command, CommandError, Connect, Hello, LocaleSwitch, Payload, Start, StateGet, StorageResult, Task, ToolMessage } from "./generated/envelope.js";
 import type { ToolManifest } from "./generated/manifest.js";
 import { checkMessage, CONTRACT_VERSION, type PayloadCheck } from "./messages.js";
 import { Channel, ToolMessageError, type PortLike, type Refusal } from "./port.js";
@@ -48,7 +48,21 @@ export interface ToolSession {
   /** What the tool shows now, in the payload the manifest's `state` names: sent to Narai, and kept to answer its
    *  requests. Never anything about the learner. */
   state(payload: Payload): void;
+  /** This launch's own storage, kept by Narai (scoped to this tool and this launch: the tool names only a key). */
+  readonly storage: LaunchStorage;
   onLocale(handler: (message: LocaleSwitch) => void): void;
+}
+
+/** A storage call's answer: a get's value (a stored null is a value), or why not. */
+export type StorageAnswer = { ok: true; value?: unknown } | { ok: false; error: "quota" | "not_found" | "denied" };
+
+export interface LaunchStorage {
+  /** The value under `key`, or `not_found`. */
+  get(key: string): Promise<StorageAnswer>;
+  /** Keep `value` (any JSON, at most STORAGE_VALUE_MAX bytes) under `key`; `quota` past the launch's limits. */
+  set(key: string, value: unknown): Promise<StorageAnswer>;
+  /** Forget `key` (a missing key is fine). */
+  delete(key: string): Promise<StorageAnswer>;
 }
 
 /** Say hello to the parent, wait for Narai's host to connect (on the window, from the parent, from a listed origin,
@@ -97,6 +111,8 @@ export function session(
   let start: Start | undefined;
   const commands = new Map<string, (payload: Payload, message: Command) => void | Promise<void>>();
   let shown: Payload | undefined;
+  let calls = 0;
+  const stored = new Map<string, { get: boolean; resolve: (answer: StorageAnswer) => void }>();
   // a command that arrives before the tool hands it a handler waits for one
   const held: Command[] = [];
   let onLocale: ((message: LocaleSwitch) => void) | undefined;
@@ -137,6 +153,12 @@ export function session(
         else held.push(command);
       } else if (message.type === "narai.tool.state.get") {
         if (shown) channel.send({ v: CONTRACT_VERSION, launch: start.launch, type: "tool.state", re: (message as StateGet).id, payload: shown });
+      } else if (message.type === "narai.tool.storage.result") {
+        const r = message as StorageResult;
+        const call = stored.get(r.re);
+        if (!call) return;
+        stored.delete(r.re);
+        call.resolve(r.ok ? (call.get ? { ok: true, value: r.value ?? null } : { ok: true }) : { ok: false, error: r.error ?? "denied" });
       } else if (message.type === "narai.tool.locale") onLocale?.(message as LocaleSwitch);
       else refused({ reason: `${message.type} after the start`, data: message });
     });
@@ -144,6 +166,13 @@ export function session(
 
   function api(s: Start): ToolSession {
     const base = { v: CONTRACT_VERSION, launch: s.launch } as const;
+    // a storage call: checked and sent (a bad key or a value too large throws here, never sent), answered by `re`
+    const call = (m: { type: "tool.storage.get" | "tool.storage.delete"; key: string } | { type: "tool.storage.set"; key: string; value: unknown }) =>
+      new Promise<StorageAnswer>((resolve, reject) => {
+        const id = `st_${(calls += 1)}`;
+        try { channel.send({ ...base, ...m, id } as ToolMessage); } catch (e) { reject(e); return; }
+        stored.set(id, { get: m.type === "tool.storage.get", resolve });
+      });
     return {
       launch: s.launch,
       start: s,
@@ -170,6 +199,11 @@ export function session(
         shown = payload;
       },
       onLocale: (handler) => { onLocale = handler; },
+      storage: {
+        get: (key) => call({ type: "tool.storage.get", key }),
+        set: (key, value) => call({ type: "tool.storage.set", key, value }),
+        delete: (key) => call({ type: "tool.storage.delete", key }),
+      },
     };
   }
 }

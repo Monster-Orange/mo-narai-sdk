@@ -1,4 +1,4 @@
-import type { Answer, Close, CommandAck, CommandError, Connect, Payload, Practice, Ready, Start, State, Task, ToolMessage } from "./generated/envelope.js";
+import type { Answer, Close, Command, CommandAck, CommandError, Connect, Payload, Practice, Ready, Start, State, StorageDelete, StorageGet, StorageResult, StorageSet, Task, ToolMessage } from "./generated/envelope.js";
 import type { ToolManifest } from "./generated/manifest.js";
 import { checkMessage, CONTRACT_VERSION, type PayloadCheck } from "./messages.js";
 import { Channel, type PortLike, type Refusal } from "./port.js";
@@ -29,12 +29,16 @@ export interface MountOptions {
   onAnswer?: (message: Answer) => void;
   onPractice?: (message: Practice) => void;
   onClose?: (message: Close) => void;
+  /** Every command as it goes to the tool, with its id. */
+  onCommandSent?: (message: Command) => void;
   /** Every answer the tool gives a command (tool.command.ack or tool.command.error), whoever sent the command. */
   onCommandAnswer?: (message: CommandAck | CommandError) => void;
   /** The tool's state (tool.state): on every change, and in answer to requestState(). */
   onState?: (message: State) => void;
   /** How long a command or a state request waits for the tool's answer (ms; default COMMAND_TIMEOUT_MS). */
   commandTimeoutMs?: number;
+  /** Where the tool's storage calls go, under this launch (the host's store; none: every call is `denied`). */
+  storage?: HostStorage;
   /** A message the tool sent that the contract refuses; it never reaches a handler. */
   onRefused?: (refusal: Refusal) => void;
   /** Checks payload bodies against the manifest's schemas (`payloadChecks(manifest)`); Narai's host always passes it. */
@@ -50,6 +54,16 @@ export interface MountOptions {
 
 /** The tool's answer to a command: done, or not, with the tool's code (`failed` when no answer came in time). */
 export type CommandResult = { ok: true } | { ok: false; code: CommandError["code"]; message?: string };
+
+/** A store for launches' storage, as the host keeps it: always under the host's own launch, never one a tool names.
+ *  Narai's host backs it with its server; the harness with memory (`memoryStorage`). A get of a missing key is
+ *  `not_found`; a delete of one is ok; `quota` past the store's limits. */
+export interface HostStorage {
+  get(launch: string, key: string): Promise<{ ok: true; value: unknown } | { ok: false; error: StorageError }>;
+  set(launch: string, key: string, value: unknown): Promise<{ ok: true } | { ok: false; error: StorageError }>;
+  delete(launch: string, key: string): Promise<{ ok: true } | { ok: false; error: StorageError }>;
+}
+export type StorageError = "quota" | "not_found" | "denied";
 
 /** How long the host waits for a command's or a state request's answer. */
 export const COMMAND_TIMEOUT_MS = 10_000;
@@ -124,6 +138,25 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
         commands.get(e.re)?.({ ok: false, code: e.code, ...(e.message ? { message: e.message } : {}) });
         break;
       }
+      case "tool.storage.get":
+      case "tool.storage.set":
+      case "tool.storage.delete": {
+        const call = message as StorageGet | StorageSet | StorageDelete;
+        const store = options.storage;
+        const done = !store ? Promise.resolve({ ok: false as const, error: "denied" as const })
+          : call.type === "tool.storage.get" ? store.get(options.launch, call.key)
+          : call.type === "tool.storage.set" ? store.set(options.launch, call.key, call.value)
+          : store.delete(options.launch, call.key);
+        done.catch(() => ({ ok: false as const, error: "denied" as const })).then((r) => {
+          if (channel.closed) return;
+          // `value` is any JSON (the schema's `{}`); the generated type reads it as an object, hence the cast
+          const result = r.ok
+            ? { ...base, type: "narai.tool.storage.result", re: call.id, ok: true, ...("value" in r ? { value: r.value } : {}) }
+            : { ...base, type: "narai.tool.storage.result", re: call.id, ok: false, error: r.error };
+          channel.send(result as StorageResult);
+        });
+        break;
+      }
       case "tool.state": {
         const s = message as State;
         options.onState?.(s);
@@ -155,7 +188,9 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
   return {
     command: (command, payload) => {
       const id = nextId("cmd");
-      channel.send({ ...base, type: "narai.tool.command", id, command, payload });
+      const message: Command = { ...base, type: "narai.tool.command", id, command, payload };
+      channel.send(message);
+      options.onCommandSent?.(message);
       return pending<CommandResult>(commands, id, { ok: false, code: "failed", message: "no answer in time" });
     },
     requestState: async () => {
