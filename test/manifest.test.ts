@@ -78,4 +78,40 @@ describe("the registry's rules, checked before an upload", () => {
     m.files = [f("app.js"), f("index.html")];
     expect(manifestProblems(m)).toEqual([]);
   });
+  it.each([
+    ["the tool's page", "index.html"],
+    ["a page in a folder", "app/v2/index.html"],
+  ])("an embed Narai hosts names one of the files by relative path (%s)", (_, url) => {
+    const m = echo();
+    const f = (path: string) => ({ path, sha256: "0".repeat(64), size: 1 });
+    m.surfaces = { embed: { url, sdk: "^1" } };
+    expect(manifestProblems(m)).toEqual([`/surfaces/embed/url ${url} is relative, so it names one of the files, and none is`]);
+    m.files = [f("app.js"), f(url)].sort((a, b) => (a.path < b.path ? -1 : 1));
+    expect(manifestProblems(m)).toEqual([]);
+  });
+
+  it.each(["/index.html", "./index.html", "../index.html", "app//index.html", "http://echo.example/", "index.html?x=1"])(
+    "an embed url is https or a plain relative path (%s)",
+    (url) => {
+      const m = echo();
+      m.surfaces = { embed: { url, sdk: "^1" } };
+      expect(manifestProblems(m)).toEqual(expect.arrayContaining([expect.stringMatching(/^\/surfaces\/embed\/url /)]));
+    },
+  );
+
+  it("a slug is lower-case words joined by single hyphens", () => {
+    for (const id of ["narai--dev/echo", "narai-dev/echo--two", "-narai/echo", "narai/echo-"]) {
+      expect(manifestProblems({ ...echo(), id })).toEqual(expect.arrayContaining([expect.stringMatching(/^\/id /)]));
+    }
+    expect(manifestProblems({ ...echo(), id: "narai-dev/echo-two" })).toEqual([]);
+  });
+
+  it("a tool's host label, <name>--<publisher>, is a DNS label: 63 characters at most", () => {
+    const publisher = "p".repeat(30);
+    expect(manifestProblems({ ...echo(), id: `${publisher}/${"n".repeat(31)}` })).toEqual([]);
+    const name = "n".repeat(32);
+    expect(manifestProblems({ ...echo(), id: `${publisher}/${name}` })).toEqual([
+      `/id its host label ${name}--${publisher} is longer than 63 characters`,
+    ]);
+  });
 });

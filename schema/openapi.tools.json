@@ -1291,6 +1291,151 @@
           }
         }
       }
+    },
+    "/api/tools/launches/{launch}/storage/{key}": {
+      "get": {
+        "summary": "Storage Get",
+        "description": "A key the tool kept in this launch.",
+        "operationId": "storage_get_api_tools_launches__launch__storage__key__get",
+        "parameters": [
+          {
+            "name": "launch",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+              "title": "Launch"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9._-]{1,64}$",
+              "title": "Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Storage Put",
+        "description": "Keep a key in this launch, or rewrite it.",
+        "operationId": "storage_put_api_tools_launches__launch__storage__key__put",
+        "parameters": [
+          {
+            "name": "launch",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+              "title": "Launch"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9._-]{1,64}$",
+              "title": "Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Storage Delete",
+        "description": "Remove a key from this launch (done whether or not it was there).",
+        "operationId": "storage_delete_api_tools_launches__launch__storage__key__delete",
+        "parameters": [
+          {
+            "name": "launch",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+              "title": "Launch"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9._-]{1,64}$",
+              "title": "Key"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1511,6 +1656,19 @@
         ],
         "title": "CiTokensOut"
       },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
       "LaunchIn": {
         "properties": {
           "preset": {
@@ -1553,7 +1711,7 @@
         "properties": {
           "slug": {
             "type": "string",
-            "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
             "title": "Slug"
           },
           "name": {
@@ -1817,11 +1975,37 @@
         ],
         "title": "ScopesOut"
       },
+      "StorageIn": {
+        "properties": {
+          "value": {
+            "title": "Value",
+            "description": "Any JSON, at most 16384 bytes of it compact"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "StorageIn"
+      },
+      "StorageOut": {
+        "properties": {
+          "value": {
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "StorageOut"
+      },
       "ToolIn": {
         "properties": {
           "name": {
             "type": "string",
-            "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
             "title": "Name"
           }
         },
@@ -1896,6 +2080,46 @@
           "tools"
         ],
         "title": "ToolsOut"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
       },
       "VersionDetail": {
         "properties": {

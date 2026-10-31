@@ -1,0 +1,602 @@
+{
+  "about": "The play_passage matcher's cases (narai.tools.music_match.match; 2026-10-31: Narai owns music.* and play_passage). Narai's judge and the SDK's matcher (a tool's preview) both run every case and must agree. A played note's time is at_ms - latency_ms; each expected note, in time order, takes the earliest unused played note within timing_ms and pitch_tolerance semitones (pitches are MIDI numbers, as music.played@1 carries them). A note with no pitch (a rhythm's onset, a tap) matches on time alone. Outcomes per expected note: hit, wrong_pitch (a note in its window, another pitch), early or late (its pitch, outside the window), missed. extras: played notes no expected note took. An expected note with no at_ms is untimed (a one-note target): every played note is in its window, so it is a hit, wrong_pitch or missed, never early or late.",
+  "version": 1,
+  "cases": [
+    {
+      "name": "played as written",
+      "expected": [
+        {
+          "pitch": 57,
+          "at_ms": 0
+        },
+        {
+          "pitch": 60,
+          "at_ms": 500
+        },
+        {
+          "pitch": 64,
+          "at_ms": 1000
+        }
+      ],
+      "played": [
+        {
+          "pitch": 57,
+          "at_ms": 0
+        },
+        {
+          "pitch": 60,
+          "at_ms": 500
+        },
+        {
+          "pitch": 64,
+          "at_ms": 1000
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "hit",
+        "hit"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "the measured latency is taken off every played note",
+      "expected": [
+        {
+          "pitch": 57,
+          "at_ms": 0
+        },
+        {
+          "pitch": 60,
+          "at_ms": 500
+        }
+      ],
+      "played": [
+        {
+          "pitch": 57,
+          "at_ms": 180
+        },
+        {
+          "pitch": 60,
+          "at_ms": 680
+        }
+      ],
+      "latency_ms": 180,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "hit"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "without its latency the same playing is late",
+      "expected": [
+        {
+          "pitch": 57,
+          "at_ms": 0
+        },
+        {
+          "pitch": 60,
+          "at_ms": 500
+        }
+      ],
+      "played": [
+        {
+          "pitch": 57,
+          "at_ms": 180
+        },
+        {
+          "pitch": 60,
+          "at_ms": 680
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "late",
+        "late"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "inside the window either side is a hit, its edge included",
+      "expected": [
+        {
+          "pitch": 57,
+          "at_ms": 1000
+        },
+        {
+          "pitch": 60,
+          "at_ms": 2000
+        }
+      ],
+      "played": [
+        {
+          "pitch": 57,
+          "at_ms": 880
+        },
+        {
+          "pitch": 60,
+          "at_ms": 2120
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "hit"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "its pitch outside the window: early or late",
+      "expected": [
+        {
+          "pitch": 57,
+          "at_ms": 1000
+        },
+        {
+          "pitch": 60,
+          "at_ms": 2000
+        }
+      ],
+      "played": [
+        {
+          "pitch": 57,
+          "at_ms": 700
+        },
+        {
+          "pitch": 60,
+          "at_ms": 2400
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "early",
+        "late"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "another pitch in the window is a wrong pitch, and taken",
+      "expected": [
+        {
+          "pitch": 57,
+          "at_ms": 0
+        },
+        {
+          "pitch": 60,
+          "at_ms": 500
+        }
+      ],
+      "played": [
+        {
+          "pitch": 57,
+          "at_ms": 0
+        },
+        {
+          "pitch": 62,
+          "at_ms": 510
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "wrong_pitch"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "a note of its pitch played late is late, not spent as another note's wrong pitch",
+      "expected": [
+        {
+          "pitch": 57,
+          "at_ms": 0
+        },
+        {
+          "pitch": 60,
+          "at_ms": 500
+        }
+      ],
+      "played": [
+        {
+          "pitch": 57,
+          "at_ms": 400
+        },
+        {
+          "pitch": 60,
+          "at_ms": 900
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "late",
+        "late"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "a note not played is missed",
+      "expected": [
+        {
+          "pitch": 57,
+          "at_ms": 0
+        },
+        {
+          "pitch": 60,
+          "at_ms": 500
+        },
+        {
+          "pitch": 64,
+          "at_ms": 1000
+        }
+      ],
+      "played": [
+        {
+          "pitch": 57,
+          "at_ms": 0
+        },
+        {
+          "pitch": 64,
+          "at_ms": 1000
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "missed",
+        "hit"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "a note no expected note takes is an extra",
+      "expected": [
+        {
+          "pitch": 57,
+          "at_ms": 0
+        },
+        {
+          "pitch": 60,
+          "at_ms": 500
+        }
+      ],
+      "played": [
+        {
+          "pitch": 57,
+          "at_ms": 0
+        },
+        {
+          "pitch": 55,
+          "at_ms": 250
+        },
+        {
+          "pitch": 60,
+          "at_ms": 500
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "hit"
+      ],
+      "extras": 1
+    },
+    {
+      "name": "a pitch tolerance of one semitone takes a neighbour",
+      "expected": [
+        {
+          "pitch": 58,
+          "at_ms": 0
+        },
+        {
+          "pitch": 62,
+          "at_ms": 400
+        }
+      ],
+      "played": [
+        {
+          "pitch": 59,
+          "at_ms": 0
+        },
+        {
+          "pitch": 64,
+          "at_ms": 400
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 1,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "wrong_pitch"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "played notes are read in time order, whatever order they come in",
+      "expected": [
+        {
+          "pitch": 57,
+          "at_ms": 0
+        },
+        {
+          "pitch": 57,
+          "at_ms": 500
+        }
+      ],
+      "played": [
+        {
+          "pitch": 57,
+          "at_ms": 505
+        },
+        {
+          "pitch": 57,
+          "at_ms": 3
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "hit"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "one played note answers one expected note only",
+      "expected": [
+        {
+          "pitch": 57,
+          "at_ms": 0
+        },
+        {
+          "pitch": 57,
+          "at_ms": 100
+        }
+      ],
+      "played": [
+        {
+          "pitch": 57,
+          "at_ms": 50
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "missed"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "nothing played",
+      "expected": [
+        {
+          "pitch": 40,
+          "at_ms": 0
+        }
+      ],
+      "played": [],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "missed"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "a rhythm tapped on time (onsets have no pitch: time alone)",
+      "expected": [
+        {
+          "at_ms": 0
+        },
+        {
+          "at_ms": 500
+        },
+        {
+          "at_ms": 1000
+        }
+      ],
+      "played": [
+        {
+          "at_ms": 20
+        },
+        {
+          "at_ms": 480
+        },
+        {
+          "at_ms": 1010
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 50,
+      "outcomes": [
+        "hit",
+        "hit",
+        "hit"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "a rhythm with a late tap and one extra",
+      "expected": [
+        {
+          "at_ms": 0
+        },
+        {
+          "at_ms": 500
+        },
+        {
+          "at_ms": 1000
+        }
+      ],
+      "played": [
+        {
+          "at_ms": 0
+        },
+        {
+          "at_ms": 700
+        },
+        {
+          "at_ms": 1000
+        },
+        {
+          "at_ms": 1250
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 100,
+      "outcomes": [
+        "hit",
+        "late",
+        "hit"
+      ],
+      "extras": 1
+    },
+    {
+      "name": "a rhythm with a missed onset, the latency taken off",
+      "expected": [
+        {
+          "at_ms": 0
+        },
+        {
+          "at_ms": 500
+        },
+        {
+          "at_ms": 1000
+        }
+      ],
+      "played": [
+        {
+          "at_ms": 130
+        },
+        {
+          "at_ms": 1130
+        }
+      ],
+      "latency_ms": 120,
+      "pitch_tolerance": 0,
+      "timing_ms": 50,
+      "outcomes": [
+        "hit",
+        "missed",
+        "hit"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "an untimed note is a hit whenever it is played",
+      "expected": [
+        {
+          "pitch": 61
+        }
+      ],
+      "played": [
+        {
+          "pitch": 57,
+          "at_ms": 100
+        },
+        {
+          "pitch": 61,
+          "at_ms": 9000
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit"
+      ],
+      "extras": 1
+    },
+    {
+      "name": "an untimed note played only as another pitch is a wrong_pitch",
+      "expected": [
+        {
+          "pitch": 61
+        }
+      ],
+      "played": [
+        {
+          "pitch": 60,
+          "at_ms": 4000
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "wrong_pitch"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "an untimed note never played is missed",
+      "expected": [
+        {
+          "pitch": 61
+        }
+      ],
+      "played": [],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "missed"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "untimed notes take their own pitches, in any order",
+      "expected": [
+        {
+          "pitch": 60
+        },
+        {
+          "pitch": 64
+        }
+      ],
+      "played": [
+        {
+          "pitch": 64,
+          "at_ms": 200
+        },
+        {
+          "pitch": 60,
+          "at_ms": 900
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "hit"
+      ],
+      "extras": 0
+    }
+  ]
+}

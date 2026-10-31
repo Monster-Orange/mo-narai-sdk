@@ -4,7 +4,7 @@
   "$defs": {
     "Capabilities": {
       "additionalProperties": false,
-      "description": "What the tool's frame may use; anything not listed here is not granted.",
+      "description": "What the tool's frame may use; anything not listed here is not granted. A device (`Grant`) is used only in a\nlaunch whose step grants it.",
       "properties": {
         "audio_out": {
           "default": false,
@@ -49,11 +49,20 @@
       "description": "A page Narai frames. `sdk: none` is a passive tool: shown, never spoken to.",
       "properties": {
         "url": {
-          "description": "the tool's page; its origin is the frame's origin",
-          "maxLength": 500,
-          "pattern": "^https://\\S+$",
-          "title": "Url",
-          "type": "string"
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "pattern": "^https://\\S+$",
+              "type": "string"
+            },
+            {
+              "maxLength": 256,
+              "pattern": "^[A-Za-z0-9_~-][A-Za-z0-9._~-]*(/[A-Za-z0-9_~-][A-Za-z0-9._~-]*)*$",
+              "type": "string"
+            }
+          ],
+          "description": "the tool's page: an https URL it hosts itself (its origin is the frame's origin), or one of its files by relative path, hosted by Narai at the tool's own origin in each environment",
+          "title": "Url"
         },
         "sdk": {
           "pattern": "^\\^[1-9]\\d*$|^none$",
@@ -251,7 +260,7 @@
     "id": {
       "description": "publisher/name",
       "maxLength": 128,
-      "pattern": "^[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*$",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9]+(?:-[a-z0-9]+)*$",
       "title": "Id",
       "type": "string"
     },

@@ -348,6 +348,300 @@
       ],
       "title": "TabPractice",
       "type": "object"
+    },
+    "music.taps@1": {
+      "$defs": {
+        "Tap": {
+          "additionalProperties": false,
+          "properties": {
+            "at_ms": {
+              "description": "ms from the first beat after the count-in, as the tool heard it",
+              "minimum": 0,
+              "title": "At Ms",
+              "type": "integer"
+            },
+            "velocity": {
+              "anyOf": [
+                {
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "how hard; carried, not judged in @1",
+              "title": "Velocity"
+            }
+          },
+          "required": [
+            "at_ms"
+          ],
+          "title": "Tap",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "description": "music.taps@1",
+      "properties": {
+        "taps": {
+          "items": {
+            "$ref": "#/$defs/Tap"
+          },
+          "maxItems": 2000,
+          "title": "Taps",
+          "type": "array"
+        },
+        "source": {
+          "description": "how the tool heard the taps; `mic` is onsets the tool detected, never audio",
+          "enum": [
+            "touch",
+            "key",
+            "midi",
+            "mic"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "latency_ms": {
+          "anyOf": [
+            {
+              "description": "The latency the tool measured, in ms, sent with what it reports",
+              "maximum": 1000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Latency Ms"
+        }
+      },
+      "required": [
+        "taps",
+        "source"
+      ],
+      "title": "Taps",
+      "type": "object"
+    },
+    "music.cycle-preset@1": {
+      "additionalProperties": false,
+      "description": "music.cycle-preset@1: a rhythmic cycle as a step sets it up, a tala or a meter. The cycle's structure is here, not\nonly its name: `beats` in `groups` (a tala's divisions, a meter's bars), a clap or a wave per group, a syllable per\nbeat. Its rules across fields (the groups sum to the beats; one hand per group; one syllable per beat) are not in\nthis JSON Schema: Narai checks them with its own model wherever a payload is checked, and a tool must not take a\npreset that passes the schema alone as one Narai would send.",
+      "properties": {
+        "system": {
+          "enum": [
+            "tala",
+            "meter"
+          ],
+          "title": "System",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 32,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "rupak, adi, 4/4",
+          "title": "Name"
+        },
+        "beats": {
+          "maximum": 64,
+          "minimum": 1,
+          "title": "Beats",
+          "type": "integer"
+        },
+        "groups": {
+          "items": {
+            "maximum": 64,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Groups",
+          "type": "array"
+        },
+        "hands": {
+          "anyOf": [
+            {
+              "items": {
+                "enum": [
+                  "clap",
+                  "wave"
+                ],
+                "type": "string"
+              },
+              "maxItems": 64,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "one per group",
+          "title": "Hands"
+        },
+        "syllables": {
+          "anyOf": [
+            {
+              "items": {
+                "maxLength": 16,
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 64,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "one per beat",
+          "title": "Syllables"
+        },
+        "subdivision": {
+          "default": 1,
+          "description": "pulses per beat",
+          "maximum": 8,
+          "minimum": 1,
+          "title": "Subdivision",
+          "type": "integer"
+        },
+        "tempo_bpm": {
+          "maximum": 400,
+          "minimum": 20,
+          "title": "Tempo Bpm",
+          "type": "integer"
+        },
+        "count_in_beats": {
+          "default": 0,
+          "description": "beats before the first; the clock starts after",
+          "maximum": 16,
+          "minimum": 0,
+          "title": "Count In Beats",
+          "type": "integer"
+        },
+        "cycles": {
+          "default": 1,
+          "maximum": 16,
+          "minimum": 1,
+          "title": "Cycles",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "system",
+        "beats",
+        "groups",
+        "tempo_bpm"
+      ],
+      "title": "CyclePreset",
+      "type": "object"
+    },
+    "music.interval-preset@1": {
+      "additionalProperties": false,
+      "description": "music.interval-preset@1: what an interval trainer plays, one pitch (the learner plays the interval above it) or\ntwo, low then high, an octave apart at most (the learner names it). The pitches are the sound, never the answer key:\nNarai holds the key and judges. That the two are in order and within an octave is not in this JSON Schema: Narai\nchecks it with its own model wherever a payload is checked.",
+      "properties": {
+        "notes": {
+          "items": {
+            "description": "MIDI note number (60 is middle C)",
+            "maximum": 127,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 2,
+          "minItems": 1,
+          "title": "Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "notes"
+      ],
+      "title": "IntervalPreset",
+      "type": "object"
+    },
+    "music.interval-named@1": {
+      "additionalProperties": false,
+      "description": "music.interval-named@1: the interval the learner named, by its short name (m3 is a minor third). The semitones\nbetween the two pitches, never their direction: a descending major third is M3 too.",
+      "properties": {
+        "interval": {
+          "enum": [
+            "P1",
+            "m2",
+            "M2",
+            "m3",
+            "M3",
+            "P4",
+            "TT",
+            "P5",
+            "m6",
+            "M6",
+            "m7",
+            "M7",
+            "P8"
+          ],
+          "title": "Interval",
+          "type": "string"
+        }
+      },
+      "required": [
+        "interval"
+      ],
+      "title": "IntervalNamed",
+      "type": "object"
+    },
+    "music.notes@1": {
+      "additionalProperties": false,
+      "description": "music.notes@1: notes to show, pitches where they sound and pitch classes anywhere; the first (of `notes`, else of\n`classes`) is the root the labels count from. One of the two at least: that is not in this JSON Schema, Narai checks\nit with its own model.",
+      "properties": {
+        "notes": {
+          "default": [],
+          "items": {
+            "description": "MIDI note number (60 is middle C)",
+            "maximum": 127,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 24,
+          "title": "Notes",
+          "type": "array"
+        },
+        "classes": {
+          "default": [],
+          "items": {
+            "description": "0 is C, 11 is B",
+            "maximum": 11,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 12,
+          "title": "Classes",
+          "type": "array"
+        }
+      },
+      "title": "Notes",
+      "type": "object"
+    },
+    "music.none@1": {
+      "additionalProperties": false,
+      "description": "music.none@1: no body",
+      "properties": {},
+      "title": "Empty",
+      "type": "object"
     }
   }
 }

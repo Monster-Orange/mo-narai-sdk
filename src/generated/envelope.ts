@@ -61,6 +61,12 @@ export interface Start {
   conventions?: Payload | null;
   preset?: Payload | null;
   task?: Task | null;
+  /**
+   * What this step lets the tool use; a tool shows a control for one only when it is here.
+   *
+   * @maxItems 1
+   */
+  granted?: [] | ["microphone"];
 }
 /**
  * A typed payload: `schema` names one the manifest declares for this message; the rest is that schema's.

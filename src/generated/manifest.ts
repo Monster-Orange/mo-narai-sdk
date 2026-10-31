@@ -98,7 +98,7 @@ export interface Surfaces {
  */
 export interface Embed {
   /**
-   * the tool's page; its origin is the frame's origin
+   * the tool's page: an https URL it hosts itself (its origin is the frame's origin), or one of its files by relative path, hosted by Narai at the tool's own origin in each environment
    */
   url: string;
   sdk: string;
@@ -147,7 +147,8 @@ export interface Device {
   kinds?: string[];
 }
 /**
- * What the tool's frame may use; anything not listed here is not granted.
+ * What the tool's frame may use; anything not listed here is not granted. A device (`Grant`) is used only in a
+ * launch whose step grants it.
  *
  * This interface was referenced by `ToolManifest`'s JSON-Schema
  * via the `definition` "Capabilities".

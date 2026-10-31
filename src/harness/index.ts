@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import type { Payload, Task } from "../generated/envelope.js";
 import type { ToolManifest } from "../generated/manifest.js";
 import { manifestProblems, ManifestError } from "../manifest.js";
+import type { Grant } from "../host.js";
 import { checkMessage } from "../messages.js";
 import { payloadChecks } from "../payloads.js";
 
@@ -20,6 +21,8 @@ export interface HarnessOptions {
   fallback?: string[];
   preset?: Payload;
   task?: Task;
+  /** What the step grants, simulated (`narai dev --grant microphone`): the manifest's capabilities filter it. */
+  granted?: readonly Grant[];
 }
 
 export interface HarnessEvent { at: number; direction: "in" | "out"; type: string; ok: boolean; reason?: string; message: unknown }
@@ -74,15 +77,18 @@ export async function startHarness(options: HarnessOptions): Promise<Harness> {
   const embed = options.manifest.surfaces.embed;
   if (!embed) throw new Error(`${options.manifest.id} has no embed surface: there's nothing to mount`);
   const toolDir = resolve(options.toolDir);
-  const embedPath = new URL(embed.url, "http://tool.invalid").pathname;
-  const embedDir = embedPath.slice(0, embedPath.lastIndexOf("/") + 1);
+  const embedPath = new URL(embed.url, "http://tool.invalid/").pathname;
+  // an embed Narai hosts (a relative url) is a path from the bundle's root, which Narai serves at the tool's origin
+  const hosted = !embed.url.startsWith("https://");
+  const embedDir = hosted ? "/" : embedPath.slice(0, embedPath.lastIndexOf("/") + 1);
   const events: HarnessEvent[] = [];
   const payloads = payloadChecks(options.manifest);
 
   const toolServer = createServer((req, res) => {
     const path = new URL(req.url ?? "/", "http://x").pathname;
     if (path.startsWith("/sdk/")) { void serveFile(res, SDK_DIR, path.slice("/sdk/".length)); return; }
-    // the tool's files are at the embed URL's directory: /tool/ is toolDir/index.html, /tool/app.js toolDir/app.js
+    // the tool's files are at the embed URL's directory: /tool/ is toolDir/index.html, /tool/app.js toolDir/app.js (a
+    // hosted embed's directory is the root)
     if (!path.startsWith(embedDir)) { res.writeHead(404).end(); return; }
     const relative = path.slice(embedDir.length);
     void serveFile(res, toolDir, relative === "" || relative.endsWith("/") ? `${relative}index.html` : relative);
@@ -101,7 +107,7 @@ export async function startHarness(options: HarnessOptions): Promise<Harness> {
       const launch = `lch_dev${Math.random().toString(36).slice(2, 12)}`;
       res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" }).end(JSON.stringify({
         manifest, launch, locale: options.locale ?? manifest.locales?.[0] ?? "en", fallback: options.fallback ?? [],
-        preset: options.preset, task: options.task,
+        preset: options.preset, task: options.task, granted: options.granted ?? [],
       }));
     } else if (path === "/events" && req.method === "POST") {
       void body(req).then((text) => {
@@ -119,7 +125,9 @@ export async function startHarness(options: HarnessOptions): Promise<Harness> {
       res.writeHead(404).end();
     }
   });
-  const hostPort = await listen(hostServer, options.hostPort ?? 0, "localhost");
+  // named localhost (another origin than the tool's 127.0.0.1), bound on 127.0.0.1: "localhost" binds whatever it
+  // resolves to first, ::1 on macOS and in Docker, which refused every client that reached it over IPv4
+  const hostPort = await listen(hostServer, options.hostPort ?? 0, "127.0.0.1");
   const close = (s: Server) => new Promise<void>((ok) => { s.closeAllConnections(); s.close(() => ok()); });
   return {
     hostUrl: `http://localhost:${hostPort}/`,

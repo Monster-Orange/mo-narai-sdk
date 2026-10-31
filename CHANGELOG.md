@@ -3,6 +3,45 @@
 0.x: the contract (the manifest, the wire, the registry's API) can still change between minor versions; this file says
 how. A version's entry lists what a tool or a host has to change, first.
 
+## 0.3.0
+
+What to change: a tool or publisher slug with `--` in it, or one that starts or ends with `-`, is refused now. A slug is
+lower-case words joined by single hyphens (`narai-dev/echo-two`), because `<name>--<publisher>` is the hosted tool's DNS
+label. Rename such a tool before its next release.
+
+What else to change: `music.interval-preset@1`, `music.interval-named@1`, `music.notes@1` and `music.none@1` are
+Narai's now. A manifest that declares one with its own schema is refused: declare it with `musicPayloads(...)`.
+
+- `surfaces.embed.url` can be one of the tool's own files, by its path from the bundle's root (`index.html`,
+  `app/index.html`), instead of an https URL. Narai then hosts the bundle at the tool's own origin in each environment,
+  `https://<name>--<publisher>.tools.<env>/<version>/<path>`. The path must be one of `files`.
+- `<name>--<publisher>` is at most 63 characters, a DNS label.
+- `narai dev`'s harness serves a hosted embed from the bundle's root, as Narai does. `toolOrigin()` refuses a relative
+  url with a clear error: a host mounts the URL Narai resolved it to.
+- `narai.tool.start` carries `granted`: what the step lets the tool use for this launch, `["microphone"]` or nothing. A
+  tool shows its microphone control only when `tool.start.granted` has it. Narai grants only what the manifest declares
+  (`capabilities.microphone: true`) and drops the rest; `mountTool`'s `granted` option does the same, and a start that
+  grants something undeclared is refused. The harness simulates a grant (`startHarness({ granted })`) and frames the
+  tool with `allow="microphone <its origin>"` only then.
+- Two music payloads: `music.taps@1` (taps, as heard: touch, key, MIDI or onsets from the mic, and the latency) and
+  `music.cycle-preset@1` (a tala or a meter: beats in groups, a clap or wave per group, a syllable per beat, the tempo).
+  Their types are `MusicTaps`, `MusicTap` and `MusicCyclePreset`.
+- Four more music payloads: `music.interval-preset@1` (one pitch, or two, for an interval trainer to play),
+  `music.interval-named@1` (one of the 13 interval names, P1 to P8), `music.notes@1` (pitches, pitch classes 0 to 11,
+  or both) and `music.none@1` (no body). Their types are `MusicIntervalPreset`, `MusicIntervalNamed`, `MusicNotes` and
+  `MusicNone`.
+- `musicRules(ref, body)`: the rules across a music payload's fields that its JSON Schema can't hold (a cycle's groups
+  sum to its beats, one hand per group, one syllable per beat; an interval preset's two pitches are low then high, an
+  octave apart at most; notes have pitches or classes, at least one). `payloadChecks` applies them, as Narai does.
+- `musicMatch(expected, played, { latencyMs, pitchTolerance, timingMs })`: Narai's play_passage and play_rhythm matcher,
+  for a tool's preview of what Narai will grade. Each expected note comes out a hit, wrong_pitch, early, late or missed,
+  plus the played notes nothing took (`extras`). A note without a pitch (a tap) matches on time alone, and an expected
+  note without `at_ms` (a one-note target) is untimed: a hit, wrong_pitch or missed, never early or late. It runs
+  Narai's own cases, `schema/music_match.cases.json`, so the two agree. Narai still decides: a tool never sends it.
+- The harness answers at `localhost` wherever that resolves to `::1` first (macOS, Docker): its host page was bound to
+  `::1` alone there, and refused a client that reached it over IPv4.
+- `schema/openapi.tools.json` adds a launch's storage (`/api/tools/launches/{launch}/storage/{key}`) and the slug rule.
+
 ## 0.2.1
 
 Nothing to change.
