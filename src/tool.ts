@@ -1,17 +1,19 @@
 import type { Answer, Command, CommandError, Connect, Hello, LocaleSwitch, Payload, Start, StateGet, StorageResult, Task, ToolMessage } from "./generated/envelope.js";
 import type { ToolManifest } from "./generated/manifest.js";
 import { checkMessage, CONTRACT_VERSION, type PayloadCheck } from "./messages.js";
+import { CONNECT_TIMEOUT_MS, isDevHostOrigin, isDevHostname, NARAI_HOST_ORIGINS } from "./origins.js";
 import { Channel, ToolMessageError, type PortLike, type Refusal } from "./port.js";
 
 export interface ConnectOptions {
-  /** The origins Narai's host may be on (e.g. `https://michinar.ai`); a connect from anywhere else is ignored. A tool
-   *  served from this machine (`narai dev`) also takes a host on this machine. */
-  hostOrigins: readonly string[];
+  /** The origins Narai's host may be on; a connect from anywhere else is ignored. Default: Narai's own
+   *  (NARAI_HOST_ORIGINS). A tool in development (served from this machine, or by a local Narai) also takes a local
+   *  Narai and a host on this machine. */
+  hostOrigins?: readonly string[];
   /** A message the host sent that the contract refuses; it never reaches a handler. */
   onRefused?: (refusal: Refusal) => void;
   /** Checks payload bodies against the manifest's schemas, both ways (`payloadChecks(manifest)`, where eval is allowed). */
   payloads?: PayloadCheck;
-  /** Gives up waiting for the host after this long (ms). Default: wait. */
+  /** Gives up waiting for the host after this long (ms). Default CONNECT_TIMEOUT_MS; Infinity waits. */
   timeoutMs?: number;
   /** For tests: the window the tool runs in. */
   window?: ToolWindow;
@@ -70,12 +72,15 @@ export interface LaunchStorage {
 export function connect(manifest: ToolManifest, options: ConnectOptions): Promise<ToolSession> {
   const win = options.window ?? (globalThis as unknown as { window: ToolWindow }).window;
   const refused = options.onRefused ?? (() => undefined);
-  const local = LOOPBACK.has(win.location?.hostname ?? "");
+  const hosts = options.hostOrigins ?? NARAI_HOST_ORIGINS;
+  const dev = isDevHostname(win.location?.hostname ?? "");
+  const wait = options.timeoutMs ?? CONNECT_TIMEOUT_MS;
   return new Promise((resolve, reject) => {
-    const timer = options.timeoutMs === undefined ? undefined
-      : setTimeout(() => { win.removeEventListener("message", onConnect); reject(new Error("Narai's host didn't connect")); }, options.timeoutMs);
+    const timer = Number.isFinite(wait)
+      ? setTimeout(() => { win.removeEventListener("message", onConnect); reject(new Error("Narai's host didn't connect")); }, wait)
+      : undefined;
     function onConnect(event: ConnectEvent): void {
-      if (event.source !== win.parent || !(options.hostOrigins.includes(event.origin) || (local && loopback(event.origin)))) return;
+      if (event.source !== win.parent || !(hosts.includes(event.origin) || (dev && isDevHostOrigin(event.origin)))) return;
       const checked = checkMessage(manifest, event.data, { from: "host" });
       if (!checked.ok || (checked.message as Connect).type !== "narai.tool.connect") return;
       const port = event.ports[0];
@@ -90,17 +95,6 @@ export function connect(manifest: ToolManifest, options: ConnectOptions): Promis
     const hello: Hello = { type: "tool.hello", v: CONTRACT_VERSION };
     win.parent.postMessage(hello, "*");
   });
-}
-
-const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]"]);
-
-function loopback(origin: string): boolean {
-  try {
-    const url = new URL(origin);
-    return url.protocol === "http:" && LOOPBACK.has(url.hostname);
-  } catch {
-    return false;
-  }
 }
 
 /** The session on a port the host handed over: the first message is the start; nothing else until it. */

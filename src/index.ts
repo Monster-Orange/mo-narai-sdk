@@ -10,3 +10,4 @@ export { CommandRefused, connect, session, type ConnectEvent, type ConnectOption
 export { COMMAND_TIMEOUT_MS, mountTool, toolOrigin, type CommandResult, type HelloEvent, type HostSession, type HostStorage, type HostWindow, type MountOptions, type StorageError, type ToolFrame } from "./host.js";
 export { httpStorage, memoryStorage, type FetchLike } from "./storage.js";
 export type { LaunchStorage, StorageAnswer } from "./tool.js";
+export { CONNECT_TIMEOUT_MS, NARAI_HOST_ORIGINS } from "./origins.js";

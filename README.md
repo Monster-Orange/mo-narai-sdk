@@ -23,7 +23,7 @@ import { connect, defineTool } from "@michinarai/sdk";
 
 const manifest = defineTool({ id: "you/echo", version: "0.1.0", sdk: "^1", /* … */ }); // throws a ManifestError, every reason
 // or a manifest kept as JSON: defineTool(json) checks it at runtime and returns a ToolManifest
-const tool = await connect(manifest, { hostOrigins: ["https://michinar.ai"] });
+const tool = await connect(manifest);   // takes Narai's host (NARAI_HOST_ORIGINS), waits CONNECT_TIMEOUT_MS
 
 tool.start;                       // the locale, its fallbacks, the step's preset, the task (if Narai judges one)
 tool.onCommand("highlight", async (payload) => { /* only commands the manifest declares arrive */ });
@@ -71,6 +71,19 @@ most 64 keys and 256 KB. A host passes `storage` to `mountTool`: `httpStorage({ 
 
 `@michinarai/sdk/payloads` checks payload bodies against the JSON Schemas the manifest declares (it compiles them, so it's
 for the host, the harness and the CLI, where eval is allowed).
+
+**Who may connect.** A tool takes a connect only from its parent window, at one of Narai's origins:
+`NARAI_HOST_ORIGINS` (`https://michinar.ai`, `https://beta.michinar.ai`), or the `hostOrigins` you pass. A tool in
+development, served from this machine or under `local.michinar.ai`, also takes a local Narai
+(`https://local.michinar.ai`) and a host on this machine; a tool anywhere else never does. `connect` gives up after
+`CONNECT_TIMEOUT_MS` (10 s; `timeoutMs: Infinity` waits), the same number Narai's host waits before it says a tool didn't
+load.
+
+**Narai's host** imports `@michinarai/sdk/host`: `mountTool`, `toolOrigin`, `CONNECT_TIMEOUT_MS` and
+`NARAI_HOST_ORIGINS`, and nothing of a tool's runtime. A host under a strict CSP (no `'unsafe-eval'`) can't compile
+payload schemas, so it leaves `payloads` unset and relies on the server, which validates every answer and practice
+report's body against the manifest. Everything else (the envelope, the declared names and schemas, the verdict ban,
+the size cap, this launch and task, ready first) is checked by precompiled code and holds there too.
 
 ## Testing a tool
 
