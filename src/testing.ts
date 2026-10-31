@@ -68,6 +68,8 @@ export interface LaunchOptions {
 /** What the host received, in order, and what it refused. */
 export interface Received {
   ready: Ready[];
+  /** Each time the tool rendered a locale other than the learner's (the host's fallback notice). */
+  fallbacks: { requested: string; rendered: string }[];
   answers: Answer[];
   states: State[];
   commandAnswers: (CommandAck | CommandError)[];
@@ -102,7 +104,7 @@ export interface Launched {
 export async function launch(manifest: ToolManifest, options: LaunchOptions = {}): Promise<Launched> {
   const pair = browserPair(manifest);
   const channel = new MessageChannel();
-  const received: Received = { ready: [], answers: [], states: [], commandAnswers: [], practice: [], closes: [], refused: [] };
+  const received: Received = { ready: [], fallbacks: [], answers: [], states: [], commandAnswers: [], practice: [], closes: [], refused: [] };
   const toolRefused: Refusal[] = [];
   const connected = connect(manifest, { hostOrigins: [HOST_ORIGIN], window: pair.toolWindow, onRefused: (r) => toolRefused.push(r) });
   const mount: MountOptions = {
@@ -112,6 +114,7 @@ export async function launch(manifest: ToolManifest, options: LaunchOptions = {}
     locale: options.locale ?? manifest.locales?.[0] ?? "en",
     fallback: options.fallback ?? [],
     onReady: (m) => received.ready.push(m),
+    onFallback: (f) => received.fallbacks.push(f),
     onAnswer: (m) => received.answers.push(m),
     onState: (m) => received.states.push(m),
     onCommandAnswer: (m) => received.commandAnswers.push(m),

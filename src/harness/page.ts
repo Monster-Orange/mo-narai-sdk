@@ -38,6 +38,13 @@ const session = mountTool(config.manifest, {
   ...(config.preset ? { preset: config.preset } : {}),
   ...(config.task ? { task: config.task } : {}),
   onReady: (m) => { window.__narai.ready = true; record_in(m); },
+  // as Narai's host does: the learner is told the tool is shown in another language
+  onFallback: (f) => {
+    const notice = document.createElement("p");
+    notice.dataset.fallback = "";
+    notice.textContent = `Shown in ${f.rendered}: this tool isn't available in ${f.requested} yet.`;
+    frame.before(notice);
+  },
   onAnswer: record_in,
   onPractice: record_in,
   onClose: record_in,

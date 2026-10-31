@@ -29,6 +29,8 @@ export interface MountOptions {
   onAnswer?: (message: Answer) => void;
   onPractice?: (message: Practice) => void;
   onClose?: (message: Close) => void;
+  /** The tool rendered a locale other than the learner's (`locale`): the host shows its fallback notice. */
+  onFallback?: (fallback: { requested: string; rendered: string }) => void;
   /** Every command as it goes to the tool, with its id. */
   onCommandSent?: (message: Command) => void;
   /** Every answer the tool gives a command (tool.command.ack or tool.command.error), whoever sent the command. */
@@ -124,7 +126,13 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
       return;
     }
     switch (message.type) {
-      case "tool.ready": ready = true; options.onReady?.(message as Ready); break;
+      case "tool.ready": {
+        ready = true;
+        const r = message as Ready;
+        options.onReady?.(r);
+        if (r.locale !== options.locale) options.onFallback?.({ requested: options.locale, rendered: r.locale });
+        break;
+      }
       case "tool.answer": options.onAnswer?.(message as Answer); break;
       case "tool.practice":
         if (practice.take()) options.onPractice?.(message as Practice);
