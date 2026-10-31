@@ -89,3 +89,13 @@ describe("the harness", () => {
     expect(refused?.reason).toMatch(/^echo.answer@1: \/text must NOT have more than 200 characters/);
   });
 });
+
+describe("a reloaded tool frame (sdk#19)", () => {
+  it("says hello again and gets the same launch: a second tool.ready", async () => {
+    const before = (await events()).filter((e) => e.type === "tool.ready").length;
+    await tool.goto(tool.url());
+    await until("tool.ready", before + 1);
+    const ready = (await events()).filter((e) => e.type === "tool.ready");
+    expect(ready.at(-1)).toMatchObject({ ok: true });
+  }, 20_000);
+});

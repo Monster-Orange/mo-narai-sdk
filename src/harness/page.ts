@@ -51,6 +51,10 @@ const session = mountTool(config.manifest, {
   onState: record_in,
   onCommandAnswer: record_in,
   onCommandSent: (m) => void record("out", m),
+  // development: a reloaded tool frame is connected again, to the same launch (sdk#19)
+  reconnect: true,
+  // a launch's storage, both ways: the tool's call, and the host's answer (sdk#19)
+  onStorage: (call, result) => { record_in(call); void record("out", result); },
   // a launch's storage, kept in this page's memory (Narai's host keeps it on the server)
   storage: memoryStorage(),
   onRefused: (r) => record_in(r.data),
