@@ -16,6 +16,15 @@ This package gives a tool:
 
 The command line (`narai`, in `@michinarai/cli`) scaffolds, validates, builds and registers tools.
 
+## Install
+
+```sh
+npm install @michinarai/sdk
+```
+
+It's on npm from 0.1.0. Every release from 0.1.1 on is published from this repository's release workflow, with
+provenance (npm shows where and from which commit it was built). What changed in each is in `CHANGELOG.md`.
+
 ## A tool
 
 ```ts
@@ -139,7 +148,7 @@ npm run typecheck
 ## Stability
 
 0.x: the contract (the manifest, the wire, the registry's API) can still change between minor versions, and the
-changelog says how. 1.0 will hold it.
+changelog (`CHANGELOG.md`) says how. 1.0 will hold it.
 
 ## Releasing
 
@@ -154,8 +163,8 @@ npm stage list @michinarai/sdk
 npm stage approve <stage-id>
 ```
 
-**The first publish of the package, once.** Trusted publishing can't create a package, so a maintainer publishes the first
-version by hand from his machine:
+**The first publish of the package, once (done: 0.1.0).** Trusted publishing can't create a package, so a maintainer
+published the first version by hand, from their own machine:
 
 1. Run the workflow by hand (Actions › release › Run workflow). It's a dry run, and it keeps the tarball and
    `SHA256SUMS` as the `release` artifact. Download it.
