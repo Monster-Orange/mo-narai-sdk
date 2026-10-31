@@ -1,7 +1,7 @@
 # Releases @michinarai/sdk (README › Releasing). npm's trusted publishing only: no token anywhere, in CI or out.
-# - A version tag (v1.2.3, equal to package.json's version) packs the tarball, STAGES it on npm (`npm stage publish`,
-#   over OIDC, with provenance), and makes a GitHub release with the tarball and SHA256SUMS. Nothing is public until a maintainer approves the
-#   staged version on npm (`npm stage approve`, with 2FA).
+# - A version tag (v1.2.3, equal to package.json's version) packs the tarball, PUBLISHES it on npm (`npm publish`, over
+#   OIDC, with provenance), and makes a GitHub release with the tarball and SHA256SUMS. A tag publishes; nothing to
+#   approve.
 # - By hand (workflow_dispatch): a dry run. The same gates and the same tarball, kept with SHA256SUMS as an artifact:
 #   the one-time first publish of a package (which trusted publishing can't do) is that tarball, from a maintainer's machine.
 # Only the npm tarball ships: no raw binaries.
@@ -65,7 +65,7 @@ jobs:
           path: release/
           if-no-files-found: error
 
-  stage:
+  publish:
     if: github.ref_type == 'tag'
     needs: pack
     runs-on: ubuntu-latest # trusted publishing takes GitHub-hosted runners only
@@ -86,11 +86,11 @@ jobs:
           path: release
       - name: Check the tarball against its checksum
         run: cd release && sha256sum -c SHA256SUMS
-      - name: Stage it on npm, for a maintainer to approve
-        run: npm stage publish "release/${{ needs.pack.outputs.tarball }}" --access public
+      - name: Publish it on npm
+        run: npm publish "release/${{ needs.pack.outputs.tarball }}" --access public
 
   github-release:
-    needs: [pack, stage]
+    needs: [pack, publish]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

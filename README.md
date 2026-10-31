@@ -155,13 +155,8 @@ changelog (`CHANGELOG.md`) says how. 1.0 will hold it.
 npm's trusted publishing only: no npm token, in CI or anywhere else. The workflow is `.github/workflows/release.yml`.
 
 **Every release.** Set `version` in package.json, merge it, and push the tag `v<version>`. The workflow runs the
-gates, packs the tarball and its `SHA256SUMS`, and **stages** it on npm over OIDC (`npm stage publish`). It also makes
-a GitHub release with both files. Nothing is public until a maintainer approves it on npm, with 2FA:
-
-```sh
-npm stage list @michinarai/sdk
-npm stage approve <stage-id>
-```
+gates, packs the tarball and its `SHA256SUMS`, and **publishes** it on npm over OIDC (`npm publish`). It also makes
+a GitHub release with both files. A tag publishes; nothing to approve.
 
 **The first publish of the package, once (done: 0.1.0).** Trusted publishing can't create a package, so a maintainer
 published the first version by hand, from their own machine:
@@ -171,8 +166,7 @@ published the first version by hand, from their own machine:
 2. In that folder: `sha256sum -c SHA256SUMS` (on a Mac, `shasum -a 256 -c SHA256SUMS`), then
    `npm login --auth-type=web && npm publish <tarball> --access public && npm logout`.
 3. On npmjs.com, the package › Settings › Trusted publisher › GitHub Actions: organization `Monster-Orange`, repository
-   `mo-narai-sdk`, workflow `release.yml`, with staged publishing allowed. Or, with npm 11.15 or later:
-   `npm trust github @michinarai/sdk --file release.yml --repo Monster-Orange/mo-narai-sdk --allow-stage-publish`.
+   `mo-narai-sdk`, workflow `release.yml`, allowed to publish directly.
 4. The same page › Publishing access: **Require two-factor authentication and disallow tokens**. Trusted publishing
    still works.
 
@@ -181,7 +175,7 @@ Mind:
 - The trusted-publisher fields are case-sensitive, and npm doesn't check them when they're saved. A mismatch fails
   only at publish time, as an `E404` that looks like a missing package. package.json's `repository.url` must be this
   repository exactly.
-- A new trusted-publisher configuration must publish (or stage) within 2 days, or it expires.
+- A new trusted-publisher configuration must publish within 2 days, or it expires.
 - Provenance is on: npm generates it under trusted publishing for a public repository and a public package, with no
-  flag, staged releases included. package.json's `repository.url` is what npm checks it against. The one-time first
+  flag. package.json's `repository.url` is what npm checks it against. The one-time first
   publish, from a maintainer's machine, has none.
