@@ -1,12 +1,12 @@
 // The harness's host page (browser): mounts the tool as Narai's host does and shows every message. Served by
 // startHarness() at http://localhost:<port>/; the tool is on 127.0.0.1, another origin.
-import { mountTool } from "../host.js";
+import { mountTool, type Grant } from "../host.js";
 import { memoryStorage } from "../storage.js";
 import type { Payload, Task } from "../generated/envelope.js";
 import type { HarnessEvent } from "./index.js";
 import type { ToolManifest } from "../generated/manifest.js";
 
-interface Config { manifest: ToolManifest; launch: string; locale: string; fallback: string[]; preset?: Payload; task?: Task }
+interface Config { manifest: ToolManifest; launch: string; locale: string; fallback: string[]; preset?: Payload; task?: Task; granted: Grant[] }
 
 declare global { interface Window { __narai: { events: HarnessEvent[]; ready: boolean } } }
 
@@ -26,6 +26,11 @@ async function record(direction: "in" | "out", message: unknown): Promise<Harnes
 
 const config = (await (await fetch("/harness.json")).json()) as Config;
 const frame = document.getElementById("tool") as HTMLIFrameElement;
+// as Narai frames a launch: the microphone is allowed to the tool's origin only when the step grants it and the manifest
+// declares it
+const toolAt = new URL(config.manifest.surfaces.embed?.url ?? "about:blank").origin;
+const mic = config.granted.includes("microphone") && config.manifest.capabilities?.microphone === true;
+frame.allow = mic ? `microphone ${toolAt}` : "";
 frame.src = config.manifest.surfaces.embed?.url ?? "about:blank";
 await new Promise((ok) => frame.addEventListener("load", ok, { once: true }));
 
@@ -37,6 +42,7 @@ const session = mountTool(config.manifest, {
   fallback: config.fallback,
   ...(config.preset ? { preset: config.preset } : {}),
   ...(config.task ? { task: config.task } : {}),
+  granted: config.granted,
   onReady: (m) => { window.__narai.ready = true; record_in(m); },
   // as Narai's host does: the learner is told the tool is shown in another language
   onFallback: (f) => {

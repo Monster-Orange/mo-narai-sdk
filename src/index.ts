@@ -7,7 +7,7 @@ export {
 } from "./messages.js";
 export { ToolMessageError, type PortLike, type Refusal } from "./port.js";
 export { CommandRefused, connect, session, type ConnectEvent, type ConnectOptions, type PracticeReport, type ToolSession, type ToolWindow } from "./tool.js";
-export { COMMAND_TIMEOUT_MS, mountTool, toolOrigin, type CommandResult, type HelloEvent, type HostSession, type HostStorage, type HostWindow, type MountOptions, type StorageError, type ToolFrame } from "./host.js";
+export { COMMAND_TIMEOUT_MS, mountTool, toolOrigin, type CommandResult, type HelloEvent, type HostSession, type HostStorage, type HostWindow, type Grant, type MountOptions, type StorageError, type ToolFrame } from "./host.js";
 export { httpStorage, memoryStorage, type FetchLike } from "./storage.js";
 export type { LaunchStorage, StorageAnswer } from "./tool.js";
 export { MUSIC_PAYLOADS, musicPayloads, musicRules, type MusicCyclePreset, type MusicNeckPreset, type MusicNeckState, type MusicNote, type MusicPlayed, type MusicTabPractice, type MusicTap, type MusicTaps } from "./music.js";

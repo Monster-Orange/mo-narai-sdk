@@ -14,6 +14,9 @@ export interface HostWindow {
 
 export interface HelloEvent { data: unknown; origin: string; source: unknown }
 
+/** What a step can let a tool use for one launch (narai.tool.start's `granted`). */
+export type Grant = NonNullable<Start["granted"]>[number];
+
 export interface MountOptions {
   /** The iframe's window: the port is posted to it at the tool's origin, and its hello is the only one taken. */
   frame: ToolFrame;
@@ -25,6 +28,9 @@ export interface MountOptions {
   preset?: Payload;
   conventions?: Payload;
   task?: Task;
+  /** What the step lets the tool use for this launch. Only what the manifest declares (`capabilities`) goes to the tool;
+   *  the rest is dropped, and the launch still starts, as Narai does. */
+  granted?: readonly Grant[];
   onReady?: (message: Ready) => void;
   onAnswer?: (message: Answer) => void;
   onPractice?: (message: Practice) => void;
@@ -200,6 +206,8 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
   if (options.preset) start.preset = options.preset;
   if (options.conventions) start.conventions = options.conventions;
   if (options.task) start.task = options.task;
+  const granted = (options.granted ?? []).filter((g) => manifest.capabilities?.[g] === true);
+  if (granted.length) start.granted = [...new Set(granted)] as NonNullable<Start["granted"]>;
   let handed = false;
   const onHello = (event: HelloEvent) => {
     if (event.source !== options.frame || event.origin !== origin) return;

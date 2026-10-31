@@ -15,6 +15,11 @@ label. Rename such a tool before its next release.
 - `<name>--<publisher>` is at most 63 characters, a DNS label.
 - `narai dev`'s harness serves a hosted embed from the bundle's root, as Narai does. `toolOrigin()` refuses a relative
   url with a clear error: a host mounts the URL Narai resolved it to.
+- `narai.tool.start` carries `granted`: what the step lets the tool use for this launch, `["microphone"]` or nothing. A
+  tool shows its microphone control only when `tool.start.granted` has it. Narai grants only what the manifest declares
+  (`capabilities.microphone: true`) and drops the rest; `mountTool`'s `granted` option does the same, and a start that
+  grants something undeclared is refused. The harness simulates a grant (`startHarness({ granted })`) and frames the
+  tool with `allow="microphone <its origin>"` only then.
 - Two music payloads: `music.taps@1` (taps, as heard: touch, key, MIDI or onsets from the mic, and the latency) and
   `music.cycle-preset@1` (a tala or a meter: beats in groups, a clap or wave per group, a syllable per beat, the tempo).
   Their types are `MusicTaps`, `MusicTap` and `MusicCyclePreset`.

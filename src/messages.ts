@@ -102,6 +102,9 @@ function byManifest(m: ToolManifest, message: ToolMessage, task: CheckContext["t
 }
 
 function checkStart(m: ToolManifest, message: Start): string | null {
+  for (const g of message.granted ?? []) {
+    if (m.capabilities?.[g] !== true) return `granted ${g}, which the manifest doesn't declare (capabilities.${g})`;
+  }
   if (message.preset && message.preset.schema !== m.preset_schema) {
     return `preset ${message.preset.schema} isn't the manifest's preset_schema (${m.preset_schema ?? "none"})`;
   }

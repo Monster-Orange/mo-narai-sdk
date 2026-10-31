@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import type { Payload, Task } from "../generated/envelope.js";
 import type { ToolManifest } from "../generated/manifest.js";
 import { manifestProblems, ManifestError } from "../manifest.js";
+import type { Grant } from "../host.js";
 import { checkMessage } from "../messages.js";
 import { payloadChecks } from "../payloads.js";
 
@@ -20,6 +21,8 @@ export interface HarnessOptions {
   fallback?: string[];
   preset?: Payload;
   task?: Task;
+  /** What the step grants, simulated (`narai dev --grant microphone`): the manifest's capabilities filter it. */
+  granted?: readonly Grant[];
 }
 
 export interface HarnessEvent { at: number; direction: "in" | "out"; type: string; ok: boolean; reason?: string; message: unknown }
@@ -104,7 +107,7 @@ export async function startHarness(options: HarnessOptions): Promise<Harness> {
       const launch = `lch_dev${Math.random().toString(36).slice(2, 12)}`;
       res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" }).end(JSON.stringify({
         manifest, launch, locale: options.locale ?? manifest.locales?.[0] ?? "en", fallback: options.fallback ?? [],
-        preset: options.preset, task: options.task,
+        preset: options.preset, task: options.task, granted: options.granted ?? [],
       }));
     } else if (path === "/events" && req.method === "POST") {
       void body(req).then((text) => {

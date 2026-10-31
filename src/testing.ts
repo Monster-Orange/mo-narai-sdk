@@ -56,6 +56,8 @@ export interface LaunchOptions {
   task?: Task;
   preset?: Payload;
   conventions?: Payload;
+  /** What the step grants (MountOptions): the manifest's capabilities filter it. */
+  granted?: MountOptions["granted"];
   /** The host's practice limit (MountOptions). */
   practiceLimit?: MountOptions["practiceLimit"];
   /** How long the host waits for a command's or a state request's answer (MountOptions). */
@@ -122,6 +124,7 @@ export async function launch(manifest: ToolManifest, options: LaunchOptions = {}
     launch: options.launch ?? "lch_testlaunch01",
     locale: options.locale ?? manifest.locales?.[0] ?? "en",
     fallback: options.fallback ?? [],
+    ...(options.granted ? { granted: options.granted } : {}),
     onReady: (m) => received.ready.push(m),
     onFallback: (f) => received.fallbacks.push(f),
     onAnswer: (m) => received.answers.push(m),
