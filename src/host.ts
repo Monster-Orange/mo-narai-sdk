@@ -29,6 +29,8 @@ export interface MountOptions {
   onAnswer?: (message: Answer) => void;
   onPractice?: (message: Practice) => void;
   onClose?: (message: Close) => void;
+  /** The tool rendered a locale other than the learner's (`locale`): the host shows its fallback notice. */
+  onFallback?: (fallback: { requested: string; rendered: string }) => void;
   /** A message the tool sent that the contract refuses; it never reaches a handler. */
   onRefused?: (refusal: Refusal) => void;
   /** Checks payload bodies against the manifest's schemas (`payloadChecks(manifest)`); Narai's host always passes it. */
@@ -86,7 +88,13 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
       return;
     }
     switch (message.type) {
-      case "tool.ready": ready = true; options.onReady?.(message as Ready); break;
+      case "tool.ready": {
+        ready = true;
+        const r = message as Ready;
+        options.onReady?.(r);
+        if (r.locale !== options.locale) options.onFallback?.({ requested: options.locale, rendered: r.locale });
+        break;
+      }
       case "tool.answer": options.onAnswer?.(message as Answer); break;
       case "tool.practice":
         if (practice.take()) options.onPractice?.(message as Practice);
