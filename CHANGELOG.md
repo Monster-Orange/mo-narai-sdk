@@ -33,6 +33,11 @@ Narai's now. A manifest that declares one with its own schema is refused: declar
 - `musicRules(ref, body)`: the rules across a music payload's fields that its JSON Schema can't hold (a cycle's groups
   sum to its beats, one hand per group, one syllable per beat; an interval preset's two pitches are low then high, an
   octave apart at most; notes have pitches or classes, at least one). `payloadChecks` applies them, as Narai does.
+- `musicMatch(expected, played, { latencyMs, pitchTolerance, timingMs })`: Narai's play_passage and play_rhythm matcher,
+  for a tool's preview of what Narai will grade. Each expected note comes out a hit, wrong_pitch, early, late or missed,
+  plus the played notes nothing took (`extras`). A note without a pitch (a tap) matches on time alone, and an expected
+  note without `at_ms` (a one-note target) is untimed: a hit, wrong_pitch or missed, never early or late. It runs
+  Narai's own cases, `schema/music_match.cases.json`, so the two agree. Narai still decides: a tool never sends it.
 - `schema/openapi.tools.json` adds a launch's storage (`/api/tools/launches/{launch}/storage/{key}`) and the slug rule.
 
 ## 0.2.1

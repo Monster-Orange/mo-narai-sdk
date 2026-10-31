@@ -13,3 +13,4 @@ export type { LaunchStorage, StorageAnswer } from "./tool.js";
 export { MUSIC_PAYLOADS, musicPayloads, musicRules, type MusicCyclePreset, type MusicIntervalNamed, type MusicIntervalPreset, type MusicNone, type MusicNeckPreset, type MusicNeckState, type MusicNote, type MusicNotes, type MusicPlayed, type MusicTabPractice, type MusicTap, type MusicTaps } from "./music.js";
 export { CONNECT_TIMEOUT_MS, NARAI_HOST_ORIGINS } from "./origins.js";
 export { pickLocale, type LocaleChain } from "./locale.js";
+export { musicMatch, type ExpectedNote, type MatchOptions, type MatchOutcome, type MusicMatch, type PlayedNote } from "./match.js";

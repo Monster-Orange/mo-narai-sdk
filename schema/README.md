@@ -12,6 +12,8 @@ is made in Narai and arrives here with the next copy.
   `music.*` names stay a tool's own. Narai also holds a payload to its rules across fields, which a JSON Schema can't
   (`musicRules()`: a cycle preset's groups sum to its beats, one hand per group, one syllable per beat; an interval
   preset's two pitches are low then high within an octave; notes have pitches or classes).
+- `music_match.cases.json`: the play_passage matcher's cases. Narai's judge and `musicMatch()` both run every one, and
+  must agree.
 - `verdicts.json`: the property names no answer payload may declare, under `properties` or `patternProperties`, at any
   depth, compared lower-cased. Tools measure; Narai decides.
 - `openapi.tools.json`: the tool registry's API (`/api/tools`). The CLI's client is generated from it. A 4xx body is
