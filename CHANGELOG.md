@@ -3,6 +3,15 @@
 0.x: the contract (the manifest, the wire, the registry's API) can still change between minor versions; this file says
 how. A version's entry lists what a tool or a host has to change, first.
 
+## 0.3.1
+
+Nothing to change.
+
+- `musicMatch(expected, played, { ..., ordered: true })`: an ordered passage, its notes with no `at_ms`, played in
+  order at any pace (`timingMs` is unused). Each note, in the passage's order, is a hit on the earliest unused note of
+  its pitch after the last hit; a note still open is a wrong_pitch on the earliest unused note between its neighbours'
+  notes; else it's missed. Never early or late. `schema/music_match.cases.json` adds Narai's ordered cases.
+
 ## 0.3.0
 
 What to change: a tool or publisher slug with `--` in it, or one that starts or ends with `-`, is refused now. A slug is
