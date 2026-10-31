@@ -61,6 +61,6 @@ describe("the connect timeout", () => {
 
 describe("@michinarai/sdk/host", () => {
   it("is the host's side only: mountTool, toolOrigin and the shared constants", () => {
-    expect(Object.keys(host).sort()).toEqual(["CONNECT_TIMEOUT_MS", "NARAI_HOST_ORIGINS", "mountTool", "toolOrigin"]);
+    expect(Object.keys(host).sort()).toEqual(["COMMAND_TIMEOUT_MS", "CONNECT_TIMEOUT_MS", "NARAI_HOST_ORIGINS", "mountTool", "toolOrigin"]);
   });
 });
