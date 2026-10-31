@@ -6,15 +6,12 @@ A tool is a small web app that Narai mounts in a sandboxed frame on its own orig
 instrument (a fretboard, a color wheel, a construction canvas) and reports what the learner did. Narai keeps the
 answer keys, runs every judge and owns the learner model: a tool never grades and never learns who the learner is.
 
-This package gives a tool:
-
-- `defineTool()`, its manifest: what it can show, which answers and practice it reports, which commands the Tutor
-  may send it;
-- the embed runtime: the handshake with Narai's host over a `MessagePort`, `tool.answer` and `tool.practice`
-  events, and `narai.tool.command` for the commands the manifest declares, every message checked against it;
-- a local harness that mounts the tool in a sandboxed frame on a separate origin, as Narai does.
-
-The command line (`narai`, in `@michinarai/cli`) scaffolds, validates, builds and registers tools.
+- **Learn it:** the course [Build a tool for Narai](https://michinar.ai/go/course/narai-tools) goes from an empty folder
+  to your first tool, one step at a time.
+- **Start one:** the command line, [`@michinarai/cli`](https://github.com/Monster-Orange/mo-narai-cli) (`narai init`,
+  `narai dev`, `narai validate`, `narai build`).
+- **Read real ones:** [mo-narai-labs](https://github.com/Monster-Orange/mo-narai-labs), Narai's own tools (a fretboard,
+  an interval trainer, a rhythm tapper), built only on this package.
 
 ## Install
 
@@ -22,10 +19,44 @@ The command line (`narai`, in `@michinarai/cli`) scaffolds, validates, builds an
 npm install @michinarai/sdk
 ```
 
-It's on npm from 0.1.0. Every release from 0.1.1 on is published from this repository's release workflow, with
-provenance (npm shows where and from which commit it was built). What changed in each is in `CHANGELOG.md`.
+Every release is published from this repository's release workflow, with provenance (npm shows where and from which
+commit it was built). What changed in each is in `CHANGELOG.md`.
 
-## A tool
+## Your first tool
+
+A manifest says what the tool shows and reports; `connect` waits for Narai's host; `answer` reports what the learner
+did.
+
+```js
+// tool.js, loaded by your page as <script type="module" src="./tool.js">
+import { connect, defineTool, pickLocale } from "@michinarai/sdk";
+
+const manifest = defineTool({
+  id: "you/hello", version: "0.1.0", sdk: "^1",
+  publisher: { name: "You", url: "https://example.com" },
+  surfaces: { embed: { url: "https://example.com/hello/", sdk: "^1" } },
+  payloads: { "hello.answer@1": { type: "object", properties: { text: { type: "string" } }, required: ["text"] } },
+  answers: { "hello.say": "hello.answer@1" },   // a task kind, and the payload its answer comes in
+  locales: ["en", "ja"],
+  capabilities: { audio_out: false, microphone: false, network: "none" },
+});
+
+const tool = await connect(manifest);                  // only Narai's host may connect
+tool.ready(pickLocale(tool.start, manifest.locales));  // rendered, in the learner's language if the tool has it
+document.querySelector("#say").onclick = () =>
+  tool.answer({ schema: "hello.answer@1", text: "hello" });   // what the learner did, never whether it's right
+```
+
+The page imports `@michinarai/sdk` by name: use any bundler, or an import map. `narai init` writes all of this (the
+manifest as `narai.tool.json`, the page, the build) for you.
+
+## Run it
+
+`narai dev` mounts the tool in the local harness, the way a lesson mounts it: Narai's host on `http://localhost`, the
+tool in a sandboxed frame on `http://127.0.0.1`. The harness shows every message with its verdict on it, and sends the
+manifest's commands as the Tutor would. From code, it's `startHarness` (The harness, below).
+
+## The API, in one place
 
 ```ts
 import { connect, defineTool } from "@michinarai/sdk";
