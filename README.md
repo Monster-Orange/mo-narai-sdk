@@ -154,9 +154,11 @@ changelog (`CHANGELOG.md`) says how. 1.0 will hold it.
 
 npm's trusted publishing only: no npm token, in CI or anywhere else. The workflow is `.github/workflows/release.yml`.
 
-**Every release.** Set `version` in package.json, merge it, and push the tag `v<version>`. The workflow runs the
-gates, packs the tarball and its `SHA256SUMS`, and **publishes** it on npm over OIDC (`npm publish`). It also makes
-a GitHub release with both files. A tag publishes; nothing to approve.
+**Every release.** Merge a PR that bumps `version` in package.json (and says what changed in `CHANGELOG.md`): that's
+the release. On every push to main, the workflow asks npm whether that version is published. When it isn't, the
+workflow runs the gates, packs the tarball and its `SHA256SUMS`, tags the commit `v<version>`, **publishes** it on npm
+over OIDC (`npm publish`), and makes a GitHub release with both files. A version already on npm: nothing happens.
+There's no step for a person, no tag to push and nothing to approve.
 
 **The first publish of the package, once (done: 0.1.0).** Trusted publishing can't create a package, so a maintainer
 published the first version by hand, from their own machine:
@@ -176,6 +178,8 @@ Mind:
   only at publish time, as an `E404` that looks like a missing package. package.json's `repository.url` must be this
   repository exactly.
 - A new trusted-publisher configuration must publish within 2 days, or it expires.
+- npm trusts the workflow by its file name, `release.yml`: renaming it breaks publishing (an `E404`) until the
+  trusted publisher is changed to match.
 - Provenance is on: npm generates it under trusted publishing for a public repository and a public package, with no
   flag. package.json's `repository.url` is what npm checks it against. The one-time first
   publish, from a maintainer's machine, has none.
