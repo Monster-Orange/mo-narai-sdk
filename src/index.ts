@@ -8,3 +8,4 @@ export {
 export { ToolMessageError, type PortLike, type Refusal } from "./port.js";
 export { CommandRefused, connect, session, type ConnectEvent, type ConnectOptions, type PracticeReport, type ToolSession, type ToolWindow } from "./tool.js";
 export { COMMAND_TIMEOUT_MS, mountTool, toolOrigin, type CommandResult, type HelloEvent, type HostSession, type HostWindow, type MountOptions, type ToolFrame } from "./host.js";
+export { CONNECT_TIMEOUT_MS, NARAI_HOST_ORIGINS } from "./origins.js";
