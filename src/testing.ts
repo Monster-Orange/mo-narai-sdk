@@ -3,7 +3,9 @@
 
 import type { Answer, Close, CommandAck, CommandError, Payload, Practice, Ready, State, Task } from "./generated/envelope.js";
 import type { ToolManifest } from "./generated/manifest.js";
-import { mountTool, toolOrigin, type HelloEvent, type HostSession, type HostWindow, type MountOptions, type ToolFrame } from "./host.js";
+import { mountTool, toolOrigin, type HelloEvent, type HostSession, type HostStorage, type HostWindow, type MountOptions, type ToolFrame } from "./host.js";
+import { memoryStorage } from "./storage.js";
+export { memoryStorage } from "./storage.js";
 import { payloadChecks } from "./payloads.js";
 import type { PortLike, Refusal } from "./port.js";
 import { connect, type ConnectEvent, type ToolSession, type ToolWindow } from "./tool.js";
@@ -58,6 +60,8 @@ export interface LaunchOptions {
   practiceLimit?: MountOptions["practiceLimit"];
   /** How long the host waits for a command's or a state request's answer (MountOptions). */
   commandTimeoutMs?: number;
+  /** The host's storage (default: a fresh memoryStorage()). */
+  storage?: HostStorage;
   now?: () => number;
 }
 
@@ -117,6 +121,7 @@ export async function launch(manifest: ToolManifest, options: LaunchOptions = {}
     payloads: payloadChecks(manifest),
     channel: () => channel as unknown as { port1: PortLike; port2: Transferable },
   };
+  mount.storage = options.storage ?? memoryStorage();
   for (const key of ["task", "preset", "conventions", "practiceLimit", "commandTimeoutMs", "now"] as const) {
     if (options[key] !== undefined) (mount as unknown as Record<string, unknown>)[key] = options[key];
   }

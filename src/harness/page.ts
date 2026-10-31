@@ -1,6 +1,7 @@
 // The harness's host page (browser): mounts the tool as Narai's host does and shows every message. Served by
 // startHarness() at http://localhost:<port>/; the tool is on 127.0.0.1, another origin.
 import { mountTool } from "../host.js";
+import { memoryStorage } from "../storage.js";
 import type { Payload, Task } from "../generated/envelope.js";
 import type { HarnessEvent } from "./index.js";
 import type { ToolManifest } from "../generated/manifest.js";
@@ -40,6 +41,11 @@ const session = mountTool(config.manifest, {
   onAnswer: record_in,
   onPractice: record_in,
   onClose: record_in,
+  onState: record_in,
+  onCommandAnswer: record_in,
+  onCommandSent: (m) => void record("out", m),
+  // a launch's storage, kept in this page's memory (Narai's host keeps it on the server)
+  storage: memoryStorage(),
   onRefused: (r) => record_in(r.data),
 });
 
@@ -54,8 +60,7 @@ commands.addEventListener("submit", (event) => {
   const body = (commands.querySelector("textarea") as HTMLTextAreaElement).value || "{}";
   const payload = { ...(JSON.parse(body) as object), schema: config.manifest.commands?.[name] ?? "" };
   try {
-    session.command(name, payload);
-    void record("out", { type: "narai.tool.command", v: 1, launch: config.launch, command: name, payload });
+    void session.command(name, payload); // sent and recorded (onCommandSent); its answer is recorded as it comes
   } catch (error) {
     const li = document.createElement("li");
     li.className = "refused";
