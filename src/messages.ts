@@ -79,6 +79,7 @@ function bodies(message: ToolMessage, check: PayloadCheck | undefined): string |
     "payload" in message ? message.payload : undefined,
     message.type === "narai.tool.start" ? message.preset : undefined,
     message.type === "narai.tool.start" ? message.conventions : undefined,
+    message.type === "narai.tool.start" ? message.task?.payload ?? undefined : undefined,
   ];
   for (const payload of carried) {
     if (!payload) continue;
@@ -109,6 +110,13 @@ function checkStart(m: ToolManifest, message: Start): string | null {
   }
   if (message.task && !(m.answers && message.task.kind in m.answers)) {
     return `task kind ${message.task.kind} isn't among the manifest's answers`;
+  }
+  if (message.task) {
+    // a kind the manifest gives a task payload carries it; any other kind carries none (Narai's task_refusal)
+    const declared = m.task_payloads?.[message.task.kind];
+    const carried = message.task.payload?.schema;
+    if (declared && carried !== declared) return `a ${message.task.kind} task carries ${declared}, not ${carried ?? "none"}`;
+    if (!declared && carried) return `a ${message.task.kind} task carries no payload, not ${carried}`;
   }
   return null;
 }

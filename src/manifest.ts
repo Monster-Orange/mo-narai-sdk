@@ -28,12 +28,20 @@ function contractProblems(m: ToolManifest): string[] {
     ...(m.preset_schema ? [["/preset_schema", m.preset_schema] as [string, string]] : []),
     ...(m.state ? [["/state", m.state] as [string, string]] : []),
     ...Object.entries(m.answers ?? {}).map(([k, ref]): [string, string] => [`/answers/${k}`, ref]),
+    ...Object.entries(m.task_payloads ?? {}).map(([k, ref]): [string, string] => [`/task_payloads/${k}`, ref]),
     ...Object.entries(m.practice ?? {}).map(([k, ref]): [string, string] => [`/practice/${k}`, ref]),
     ...Object.entries(m.commands ?? {}).map(([k, ref]): [string, string] => [`/commands/${k}`, ref]),
     ...(m.conventions ?? []).map((ref, i): [string, string] => [`/conventions/${i}`, ref]),
   ];
   for (const [where, ref] of named) {
     if (!declared.has(ref)) problems.push(`${where} names ${ref}, which isn't declared under /payloads`);
+  }
+  for (const kind of Object.keys(m.task_payloads ?? {})) {
+    if (!(m.answers && kind in m.answers)) problems.push(`/task_payloads/${kind} names a task kind the manifest doesn't answer`);
+  }
+  for (const ref of new Set(Object.values(m.task_payloads ?? {}))) {
+    const verdict = verdictProperty(m.payloads?.[ref], `/payloads/${ref}`);
+    if (verdict) problems.push(`${verdict}: a task's payload carries no verdict (Narai judges)`);
   }
   problems.push(...musicVariants(m.payloads));
   for (const ref of new Set(Object.values(m.answers ?? {}))) {

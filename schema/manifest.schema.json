@@ -323,6 +323,18 @@
       "title": "Answers",
       "type": "object"
     },
+    "task_payloads": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "item kind -> the payload its task carries (what to show), for kinds that carry one",
+      "propertyNames": {
+        "maxLength": 128,
+        "minLength": 1
+      },
+      "title": "Task Payloads",
+      "type": "object"
+    },
     "practice": {
       "additionalProperties": {
         "type": "string"
