@@ -169,6 +169,62 @@ export interface CyclePreset {
   cycles?: number;
 }
 
+/**
+ * music.interval-preset@1: what an interval trainer plays, one pitch (the learner plays the interval above it) or
+ * two, low then high, an octave apart at most (the learner names it). The pitches are the sound, never the answer key:
+ * Narai holds the key and judges. That the two are in order and within an octave is not in this JSON Schema: Narai
+ * checks it with its own model wherever a payload is checked.
+ */
+export interface IntervalPreset {
+  /**
+   * @minItems 1
+   * @maxItems 2
+   */
+  notes: [number] | [number, number];
+}
+
+/**
+ * music.interval-named@1: the interval the learner named, by its short name (m3 is a minor third). The semitones
+ * between the two pitches, never their direction: a descending major third is M3 too.
+ */
+export interface IntervalNamed {
+  interval: "P1" | "m2" | "M2" | "m3" | "M3" | "P4" | "TT" | "P5" | "m6" | "M6" | "m7" | "M7" | "P8";
+}
+
+/**
+ * music.notes@1: notes to show, pitches where they sound and pitch classes anywhere; the first (of `notes`, else of
+ * `classes`) is the root the labels count from. One of the two at least: that is not in this JSON Schema, Narai checks
+ * it with its own model.
+ */
+export interface Notes {
+  /**
+   * @maxItems 24
+   */
+  notes?: number[];
+  /**
+   * @maxItems 12
+   */
+  classes?:
+    | []
+    | [number]
+    | [number, number]
+    | [number, number, number]
+    | [number, number, number, number]
+    | [number, number, number, number, number]
+    | [number, number, number, number, number, number]
+    | [number, number, number, number, number, number, number]
+    | [number, number, number, number, number, number, number, number]
+    | [number, number, number, number, number, number, number, number, number]
+    | [number, number, number, number, number, number, number, number, number, number]
+    | [number, number, number, number, number, number, number, number, number, number, number]
+    | [number, number, number, number, number, number, number, number, number, number, number, number];
+}
+
+/**
+ * music.none@1: no body
+ */
+export interface Empty {}
+
 /** Narai's music payloads, ref -> the JSON Schema of the body, exactly as Narai defines them. */
 export const MUSIC_PAYLOADS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   "music.played@1": {
@@ -716,6 +772,98 @@ export const MUSIC_PAYLOADS: Readonly<Record<string, Readonly<Record<string, unk
       "tempo_bpm"
     ],
     "title": "CyclePreset",
+    "type": "object"
+  },
+  "music.interval-preset@1": {
+    "additionalProperties": false,
+    "description": "music.interval-preset@1: what an interval trainer plays, one pitch (the learner plays the interval above it) or\ntwo, low then high, an octave apart at most (the learner names it). The pitches are the sound, never the answer key:\nNarai holds the key and judges. That the two are in order and within an octave is not in this JSON Schema: Narai\nchecks it with its own model wherever a payload is checked.",
+    "properties": {
+      "notes": {
+        "items": {
+          "description": "MIDI note number (60 is middle C)",
+          "maximum": 127,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxItems": 2,
+        "minItems": 1,
+        "title": "Notes",
+        "type": "array"
+      }
+    },
+    "required": [
+      "notes"
+    ],
+    "title": "IntervalPreset",
+    "type": "object"
+  },
+  "music.interval-named@1": {
+    "additionalProperties": false,
+    "description": "music.interval-named@1: the interval the learner named, by its short name (m3 is a minor third). The semitones\nbetween the two pitches, never their direction: a descending major third is M3 too.",
+    "properties": {
+      "interval": {
+        "enum": [
+          "P1",
+          "m2",
+          "M2",
+          "m3",
+          "M3",
+          "P4",
+          "TT",
+          "P5",
+          "m6",
+          "M6",
+          "m7",
+          "M7",
+          "P8"
+        ],
+        "title": "Interval",
+        "type": "string"
+      }
+    },
+    "required": [
+      "interval"
+    ],
+    "title": "IntervalNamed",
+    "type": "object"
+  },
+  "music.notes@1": {
+    "additionalProperties": false,
+    "description": "music.notes@1: notes to show, pitches where they sound and pitch classes anywhere; the first (of `notes`, else of\n`classes`) is the root the labels count from. One of the two at least: that is not in this JSON Schema, Narai checks\nit with its own model.",
+    "properties": {
+      "notes": {
+        "default": [],
+        "items": {
+          "description": "MIDI note number (60 is middle C)",
+          "maximum": 127,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxItems": 24,
+        "title": "Notes",
+        "type": "array"
+      },
+      "classes": {
+        "default": [],
+        "items": {
+          "description": "0 is C, 11 is B",
+          "maximum": 11,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxItems": 12,
+        "title": "Classes",
+        "type": "array"
+      }
+    },
+    "title": "Notes",
+    "type": "object"
+  },
+  "music.none@1": {
+    "additionalProperties": false,
+    "description": "music.none@1: no body",
+    "properties": {},
+    "title": "Empty",
     "type": "object"
   }
 };

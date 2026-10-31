@@ -7,10 +7,11 @@ is made in Narai and arrives here with the next copy.
 - `envelope.schema.json`: every message between Narai's host and a tool (`tool.hello`, `narai.tool.connect`, start,
   command, locale, ready, answer, practice, close).
 - `music.schema.json`: the `music.*` payloads Narai defines (`music.played@1`, `music.neck-preset@1`,
-  `music.neck-state@1`, `music.tab-practice@1`, `music.taps@1`, `music.cycle-preset@1`), each the JSON Schema of the
-  payload's body. A manifest declares them unchanged (`musicPayloads()`); the registry refuses a variant. Other
+  `music.neck-state@1`, `music.tab-practice@1`, `music.taps@1`, `music.cycle-preset@1`, `music.interval-preset@1`,
+  `music.interval-named@1`, `music.notes@1`, `music.none@1`), each the JSON Schema of the payload's body. A manifest declares them unchanged (`musicPayloads()`); the registry refuses a variant. Other
   `music.*` names stay a tool's own. Narai also holds a payload to its rules across fields, which a JSON Schema can't
-  (`musicRules()`: a cycle preset's groups sum to its beats, one hand per group, one syllable per beat).
+  (`musicRules()`: a cycle preset's groups sum to its beats, one hand per group, one syllable per beat; an interval
+  preset's two pitches are low then high within an octave; notes have pitches or classes).
 - `verdicts.json`: the property names no answer payload may declare, under `properties` or `patternProperties`, at any
   depth, compared lower-cased. Tools measure; Narai decides.
 - `openapi.tools.json`: the tool registry's API (`/api/tools`). The CLI's client is generated from it. A 4xx body is

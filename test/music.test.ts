@@ -6,8 +6,8 @@ import { echo } from "./fixtures.js";
 // The music payloads Narai owns: a tool declares them as Narai wrote them (schema/music.schema.json, copied from Narai),
 // never a variant; its own music names stay its own.
 describe("Narai's music payloads", () => {
-  it("are the six Narai defines, each a JSON Schema of the payload's body", () => {
-    expect(Object.keys(MUSIC_PAYLOADS).sort()).toEqual(["music.cycle-preset@1", "music.neck-preset@1", "music.neck-state@1", "music.played@1", "music.tab-practice@1", "music.taps@1"]);
+  it("are the ten Narai defines, each a JSON Schema of the payload's body", () => {
+    expect(Object.keys(MUSIC_PAYLOADS).sort()).toEqual(["music.cycle-preset@1", "music.interval-named@1", "music.interval-preset@1", "music.neck-preset@1", "music.neck-state@1", "music.none@1", "music.notes@1", "music.played@1", "music.tab-practice@1", "music.taps@1"]);
     for (const schema of Object.values(MUSIC_PAYLOADS)) expect(Object.keys((schema as { properties: object }).properties)).not.toContain("schema");
   });
 
@@ -51,5 +51,33 @@ describe("Narai's music payloads", () => {
     expect(check("music.cycle-preset@1", RUPAK)).toBeNull();
     expect(check("music.cycle-preset@1", { ...RUPAK, syllables: ["tin", "tin", "na", "dhi", "na", "dhi", "na"] })).toBeNull();
     expect(check("music.cycle-preset@1", body)).toBe(rule);
+  });
+
+  it("check an interval preset: one pitch, or two low then high an octave apart at most", () => {
+    const m = echo();
+    m.payloads = { ...m.payloads, ...musicPayloads("music.interval-preset@1", "music.interval-named@1", "music.notes@1", "music.none@1") };
+    const check = payloadChecks(m);
+    expect(check("music.interval-preset@1", { notes: [60] })).toBeNull();
+    expect(check("music.interval-preset@1", { notes: [60, 64] })).toBeNull();
+    expect(check("music.interval-preset@1", { notes: [60, 72] })).toBeNull();
+    expect(check("music.interval-preset@1", { notes: [64, 60] })).toBe("two pitches are low then high, an octave apart at most");
+    expect(check("music.interval-preset@1", { notes: [60, 73] })).toBe("two pitches are low then high, an octave apart at most");
+    expect(check("music.interval-preset@1", { notes: [] })).not.toBeNull();
+    expect(check("music.interval-named@1", { interval: "m3" })).toBeNull();
+    expect(check("music.interval-named@1", { interval: "m9" })).not.toBeNull();
+    expect(check("music.none@1", {})).toBeNull();
+    expect(check("music.none@1", { x: 1 })).not.toBeNull();
+  });
+
+  it("check notes: pitches, classes, or both, at least one", () => {
+    const m = echo();
+    m.payloads = { ...m.payloads, ...musicPayloads("music.notes@1") };
+    const check = payloadChecks(m);
+    expect(check("music.notes@1", { notes: [57, 60, 64] })).toBeNull();
+    expect(check("music.notes@1", { classes: [9, 0, 4] })).toBeNull();
+    expect(check("music.notes@1", { notes: [57], classes: [0] })).toBeNull();
+    expect(check("music.notes@1", {})).toBe("notes or classes");
+    expect(check("music.notes@1", { notes: [], classes: [] })).toBe("notes or classes");
+    expect(check("music.notes@1", { classes: [12] })).not.toBeNull();
   });
 });

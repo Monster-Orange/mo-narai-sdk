@@ -9,6 +9,9 @@ What to change: a tool or publisher slug with `--` in it, or one that starts or 
 lower-case words joined by single hyphens (`narai-dev/echo-two`), because `<name>--<publisher>` is the hosted tool's DNS
 label. Rename such a tool before its next release.
 
+What else to change: `music.interval-preset@1`, `music.interval-named@1`, `music.notes@1` and `music.none@1` are
+Narai's now. A manifest that declares one with its own schema is refused: declare it with `musicPayloads(...)`.
+
 - `surfaces.embed.url` can be one of the tool's own files, by its path from the bundle's root (`index.html`,
   `app/index.html`), instead of an https URL. Narai then hosts the bundle at the tool's own origin in each environment,
   `https://<name>--<publisher>.tools.<env>/<version>/<path>`. The path must be one of `files`.
@@ -23,8 +26,13 @@ label. Rename such a tool before its next release.
 - Two music payloads: `music.taps@1` (taps, as heard: touch, key, MIDI or onsets from the mic, and the latency) and
   `music.cycle-preset@1` (a tala or a meter: beats in groups, a clap or wave per group, a syllable per beat, the tempo).
   Their types are `MusicTaps`, `MusicTap` and `MusicCyclePreset`.
+- Four more music payloads: `music.interval-preset@1` (one pitch, or two, for an interval trainer to play),
+  `music.interval-named@1` (one of the 13 interval names, P1 to P8), `music.notes@1` (pitches, pitch classes 0 to 11,
+  or both) and `music.none@1` (no body). Their types are `MusicIntervalPreset`, `MusicIntervalNamed`, `MusicNotes` and
+  `MusicNone`.
 - `musicRules(ref, body)`: the rules across a music payload's fields that its JSON Schema can't hold (a cycle's groups
-  sum to its beats; one hand per group; one syllable per beat). `payloadChecks` applies them, as Narai does.
+  sum to its beats, one hand per group, one syllable per beat; an interval preset's two pitches are low then high, an
+  octave apart at most; notes have pitches or classes, at least one). `payloadChecks` applies them, as Narai does.
 - `schema/openapi.tools.json` adds a launch's storage (`/api/tools/launches/{launch}/storage/{key}`) and the slug rule.
 
 ## 0.2.1

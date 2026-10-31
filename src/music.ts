@@ -1,9 +1,9 @@
 import { MUSIC_PAYLOADS } from "./generated/music.js";
 
 export { MUSIC_PAYLOADS };
-import type { CyclePreset } from "./generated/music.js";
+import type { CyclePreset, IntervalPreset, Notes } from "./generated/music.js";
 
-export type { CyclePreset as MusicCyclePreset, NeckPreset as MusicNeckPreset, NeckState as MusicNeckState, Note as MusicNote, Played as MusicPlayed, TabPractice as MusicTabPractice, Tap as MusicTap, Taps as MusicTaps } from "./generated/music.js";
+export type { CyclePreset as MusicCyclePreset, Empty as MusicNone, IntervalNamed as MusicIntervalNamed, IntervalPreset as MusicIntervalPreset, NeckPreset as MusicNeckPreset, NeckState as MusicNeckState, Note as MusicNote, Notes as MusicNotes, Played as MusicPlayed, TabPractice as MusicTabPractice, Tap as MusicTap, Taps as MusicTaps } from "./generated/music.js";
 
 /** Narai's music payloads, as a manifest's `payloads` declares them: unchanged (Narai's registry refuses a variant).
  *  `musicPayloads("music.played@1")` -> { "music.played@1": <its schema> }. */
@@ -30,12 +30,27 @@ function same(a: unknown, b: unknown): boolean {
 }
 
 /** What one of Narai's payloads breaks across its fields, which its JSON Schema can't hold (Narai checks these with its
- *  own model wherever it checks a payload); null when nothing. Call it on a body that already matches the schema. */
+ *  own model wherever it checks a payload: a cycle preset's groups, hands and syllables; an interval preset's two
+ *  pitches low then high within an octave; notes or classes, at least one); null when nothing. Call it on a body that
+ *  already matches the schema. */
 export function musicRules(ref: string, body: Readonly<Record<string, unknown>>): string | null {
-  if (ref !== "music.cycle-preset@1") return null;
-  const c = body as unknown as CyclePreset;
-  if (c.groups.reduce((sum, g) => sum + g, 0) !== c.beats) return "the groups sum to the beats";
-  if (c.hands && c.hands.length !== c.groups.length) return "one hand per group";
-  if (c.syllables && c.syllables.length !== c.beats) return "one syllable per beat";
-  return null;
+  switch (ref) {
+    case "music.cycle-preset@1": {
+      const c = body as unknown as CyclePreset;
+      if (c.groups.reduce((sum, g) => sum + g, 0) !== c.beats) return "the groups sum to the beats";
+      if (c.hands && c.hands.length !== c.groups.length) return "one hand per group";
+      if (c.syllables && c.syllables.length !== c.beats) return "one syllable per beat";
+      return null;
+    }
+    case "music.interval-preset@1": {
+      const [low, high] = (body as unknown as IntervalPreset).notes;
+      if (low !== undefined && high !== undefined && !(high - low >= 0 && high - low <= 12)) return "two pitches are low then high, an octave apart at most";
+      return null;
+    }
+    case "music.notes@1": {
+      const n = body as unknown as Notes;
+      return (n.notes ?? []).length || (n.classes ?? []).length ? null : "notes or classes";
+    }
+    default: return null;
+  }
 }
