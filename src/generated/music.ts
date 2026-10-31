@@ -105,6 +105,70 @@ export interface TabPractice {
   latency_ms?: number | null;
 }
 
+/**
+ * music.taps@1
+ */
+export interface Taps {
+  /**
+   * @maxItems 2000
+   */
+  taps: Tap[];
+  /**
+   * how the tool heard the taps; `mic` is onsets the tool detected, never audio
+   */
+  source: "touch" | "key" | "midi" | "mic";
+  latency_ms?: number | null;
+}
+export interface Tap {
+  /**
+   * ms from the first beat after the count-in, as the tool heard it
+   */
+  at_ms: number;
+  /**
+   * how hard; carried, not judged in @1
+   */
+  velocity?: number | null;
+}
+
+/**
+ * music.cycle-preset@1: a rhythmic cycle as a step sets it up, a tala or a meter. The cycle's structure is here, not
+ * only its name: `beats` in `groups` (a tala's divisions, a meter's bars), a clap or a wave per group, a syllable per
+ * beat. Its rules across fields (the groups sum to the beats; one hand per group; one syllable per beat) are not in
+ * this JSON Schema: Narai checks them with its own model wherever a payload is checked, and a tool must not take a
+ * preset that passes the schema alone as one Narai would send.
+ */
+export interface CyclePreset {
+  system: "tala" | "meter";
+  /**
+   * rupak, adi, 4/4
+   */
+  name?: string | null;
+  beats: number;
+  /**
+   * @minItems 1
+   * @maxItems 64
+   */
+  groups: [number, ...number[]];
+  /**
+   * one per group
+   */
+  hands?: ("clap" | "wave")[] | null;
+  /**
+   * one per beat
+   */
+  syllables?: string[] | null;
+  /**
+   * pulses per beat
+   */
+  subdivision?: number;
+  tempo_bpm: number;
+  /**
+   * beats before the first; the clock starts after
+   */
+  count_in_beats?: number;
+  cycles?: number;
+}
+
 /** Narai's music payloads, ref -> the JSON Schema of the body, exactly as Narai defines them. */
 export const MUSIC_PAYLOADS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   "music.played@1": {
@@ -450,6 +514,208 @@ export const MUSIC_PAYLOADS: Readonly<Record<string, Readonly<Record<string, unk
       "tempo_bpm"
     ],
     "title": "TabPractice",
+    "type": "object"
+  },
+  "music.taps@1": {
+    "$defs": {
+      "Tap": {
+        "additionalProperties": false,
+        "properties": {
+          "at_ms": {
+            "description": "ms from the first beat after the count-in, as the tool heard it",
+            "minimum": 0,
+            "title": "At Ms",
+            "type": "integer"
+          },
+          "velocity": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "how hard; carried, not judged in @1",
+            "title": "Velocity"
+          }
+        },
+        "required": [
+          "at_ms"
+        ],
+        "title": "Tap",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "music.taps@1",
+    "properties": {
+      "taps": {
+        "items": {
+          "$ref": "#/$defs/Tap"
+        },
+        "maxItems": 2000,
+        "title": "Taps",
+        "type": "array"
+      },
+      "source": {
+        "description": "how the tool heard the taps; `mic` is onsets the tool detected, never audio",
+        "enum": [
+          "touch",
+          "key",
+          "midi",
+          "mic"
+        ],
+        "title": "Source",
+        "type": "string"
+      },
+      "latency_ms": {
+        "anyOf": [
+          {
+            "description": "The latency the tool measured, in ms, sent with what it reports",
+            "maximum": 1000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Latency Ms"
+      }
+    },
+    "required": [
+      "taps",
+      "source"
+    ],
+    "title": "Taps",
+    "type": "object"
+  },
+  "music.cycle-preset@1": {
+    "additionalProperties": false,
+    "description": "music.cycle-preset@1: a rhythmic cycle as a step sets it up, a tala or a meter. The cycle's structure is here, not\nonly its name: `beats` in `groups` (a tala's divisions, a meter's bars), a clap or a wave per group, a syllable per\nbeat. Its rules across fields (the groups sum to the beats; one hand per group; one syllable per beat) are not in\nthis JSON Schema: Narai checks them with its own model wherever a payload is checked, and a tool must not take a\npreset that passes the schema alone as one Narai would send.",
+    "properties": {
+      "system": {
+        "enum": [
+          "tala",
+          "meter"
+        ],
+        "title": "System",
+        "type": "string"
+      },
+      "name": {
+        "anyOf": [
+          {
+            "maxLength": 32,
+            "minLength": 1,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "rupak, adi, 4/4",
+        "title": "Name"
+      },
+      "beats": {
+        "maximum": 64,
+        "minimum": 1,
+        "title": "Beats",
+        "type": "integer"
+      },
+      "groups": {
+        "items": {
+          "maximum": 64,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "maxItems": 64,
+        "minItems": 1,
+        "title": "Groups",
+        "type": "array"
+      },
+      "hands": {
+        "anyOf": [
+          {
+            "items": {
+              "enum": [
+                "clap",
+                "wave"
+              ],
+              "type": "string"
+            },
+            "maxItems": 64,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "one per group",
+        "title": "Hands"
+      },
+      "syllables": {
+        "anyOf": [
+          {
+            "items": {
+              "maxLength": 16,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 64,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "one per beat",
+        "title": "Syllables"
+      },
+      "subdivision": {
+        "default": 1,
+        "description": "pulses per beat",
+        "maximum": 8,
+        "minimum": 1,
+        "title": "Subdivision",
+        "type": "integer"
+      },
+      "tempo_bpm": {
+        "maximum": 400,
+        "minimum": 20,
+        "title": "Tempo Bpm",
+        "type": "integer"
+      },
+      "count_in_beats": {
+        "default": 0,
+        "description": "beats before the first; the clock starts after",
+        "maximum": 16,
+        "minimum": 0,
+        "title": "Count In Beats",
+        "type": "integer"
+      },
+      "cycles": {
+        "default": 1,
+        "maximum": 16,
+        "minimum": 1,
+        "title": "Cycles",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "system",
+      "beats",
+      "groups",
+      "tempo_bpm"
+    ],
+    "title": "CyclePreset",
     "type": "object"
   }
 };

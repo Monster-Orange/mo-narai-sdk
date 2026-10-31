@@ -3,6 +3,25 @@
 0.x: the contract (the manifest, the wire, the registry's API) can still change between minor versions; this file says
 how. A version's entry lists what a tool or a host has to change, first.
 
+## 0.3.0
+
+What to change: a tool or publisher slug with `--` in it, or one that starts or ends with `-`, is refused now. A slug is
+lower-case words joined by single hyphens (`narai-dev/echo-two`), because `<name>--<publisher>` is the hosted tool's DNS
+label. Rename such a tool before its next release.
+
+- `surfaces.embed.url` can be one of the tool's own files, by its path from the bundle's root (`index.html`,
+  `app/index.html`), instead of an https URL. Narai then hosts the bundle at the tool's own origin in each environment,
+  `https://<name>--<publisher>.tools.<env>/<version>/<path>`. The path must be one of `files`.
+- `<name>--<publisher>` is at most 63 characters, a DNS label.
+- `narai dev`'s harness serves a hosted embed from the bundle's root, as Narai does. `toolOrigin()` refuses a relative
+  url with a clear error: a host mounts the URL Narai resolved it to.
+- Two music payloads: `music.taps@1` (taps, as heard: touch, key, MIDI or onsets from the mic, and the latency) and
+  `music.cycle-preset@1` (a tala or a meter: beats in groups, a clap or wave per group, a syllable per beat, the tempo).
+  Their types are `MusicTaps`, `MusicTap` and `MusicCyclePreset`.
+- `musicRules(ref, body)`: the rules across a music payload's fields that its JSON Schema can't hold (a cycle's groups
+  sum to its beats; one hand per group; one syllable per beat). `payloadChecks` applies them, as Narai does.
+- `schema/openapi.tools.json` adds a launch's storage (`/api/tools/launches/{launch}/storage/{key}`) and the slug rule.
+
 ## 0.2.1
 
 Nothing to change.

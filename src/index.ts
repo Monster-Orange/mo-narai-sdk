@@ -10,6 +10,6 @@ export { CommandRefused, connect, session, type ConnectEvent, type ConnectOption
 export { COMMAND_TIMEOUT_MS, mountTool, toolOrigin, type CommandResult, type HelloEvent, type HostSession, type HostStorage, type HostWindow, type MountOptions, type StorageError, type ToolFrame } from "./host.js";
 export { httpStorage, memoryStorage, type FetchLike } from "./storage.js";
 export type { LaunchStorage, StorageAnswer } from "./tool.js";
-export { MUSIC_PAYLOADS, musicPayloads, type MusicNeckPreset, type MusicNeckState, type MusicNote, type MusicPlayed, type MusicTabPractice } from "./music.js";
+export { MUSIC_PAYLOADS, musicPayloads, musicRules, type MusicCyclePreset, type MusicNeckPreset, type MusicNeckState, type MusicNote, type MusicPlayed, type MusicTabPractice, type MusicTap, type MusicTaps } from "./music.js";
 export { CONNECT_TIMEOUT_MS, NARAI_HOST_ORIGINS } from "./origins.js";
 export { pickLocale, type LocaleChain } from "./locale.js";

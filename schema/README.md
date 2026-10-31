@@ -7,8 +7,10 @@ is made in Narai and arrives here with the next copy.
 - `envelope.schema.json`: every message between Narai's host and a tool (`tool.hello`, `narai.tool.connect`, start,
   command, locale, ready, answer, practice, close).
 - `music.schema.json`: the `music.*` payloads Narai defines (`music.played@1`, `music.neck-preset@1`,
-  `music.neck-state@1`, `music.tab-practice@1`), each the JSON Schema of the payload's body. A manifest declares them
-  unchanged (`musicPayloads()`); the registry refuses a variant. Other `music.*` names stay a tool's own.
+  `music.neck-state@1`, `music.tab-practice@1`, `music.taps@1`, `music.cycle-preset@1`), each the JSON Schema of the
+  payload's body. A manifest declares them unchanged (`musicPayloads()`); the registry refuses a variant. Other
+  `music.*` names stay a tool's own. Narai also holds a payload to its rules across fields, which a JSON Schema can't
+  (`musicRules()`: a cycle preset's groups sum to its beats, one hand per group, one syllable per beat).
 - `verdicts.json`: the property names no answer payload may declare, under `properties` or `patternProperties`, at any
   depth, compared lower-cased. Tools measure; Narai decides.
 - `openapi.tools.json`: the tool registry's API (`/api/tools`). The CLI's client is generated from it. A 4xx body is
@@ -22,5 +24,7 @@ when one fails:
 - every payload a manifest names (preset, answers, practice, commands, conventions) is declared under `payloads`;
 - no answer payload carries a verdict (`verdicts.json`), at any depth;
 - commands and answers need an embed surface that runs the SDK;
+- an embed Narai hosts (a relative `surfaces.embed.url`) names one of `files`;
+- the tool's host label, `<name>--<publisher>`, is at most 63 characters;
 - `files` are sorted by path, and `bundle_digest` is the sha256 of their canonical JSON (RFC 8785);
 - every file the manifest lists is uploaded, unchanged, and nothing else.

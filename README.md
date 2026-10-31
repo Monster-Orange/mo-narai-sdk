@@ -47,8 +47,9 @@ document.querySelector("#say").onclick = () =>
   tool.answer({ schema: "hello.answer@1", text: "hello" });   // what the learner did, never whether it's right
 ```
 
-The page imports `@michinarai/sdk` by name: use any bundler, or an import map. `narai init` writes all of this (the
-manifest as `narai.tool.json`, the page, the build) for you.
+`surfaces.embed.url` is where your page is: an https URL you host, or one of the tool's files (`index.html`) for
+Narai to host at the tool's own origin. The page imports `@michinarai/sdk` by name: use any bundler, or an import map.
+`narai init` writes all of this (the manifest as `narai.tool.json`, the page, the build) for you.
 
 ## Run it
 

@@ -5,6 +5,9 @@ import { musicVariants } from "./music.js";
 
 export type { ToolManifest } from "./generated/manifest.js";
 
+/** A hosted tool's origin is `<name>--<publisher>.tools.<env>`: that label is a DNS label. */
+const LABEL_MAX = 63;
+
 /** A manifest that doesn't match the contract, with every reason. */
 export class ManifestError extends Error {
   constructor(readonly problems: readonly string[]) {
@@ -19,8 +22,8 @@ export function describe(errors: readonly ValidationError[] | null | undefined):
 }
 
 /** What the registry checks beyond the schema (schema/README.md), checked here too so a tool finds out before it uploads:
- *  every payload a manifest names is declared, no answer payload carries a verdict, and commands and answers need an
- *  embed that runs the SDK. */
+ *  every payload a manifest names is declared, no answer payload carries a verdict, commands and answers need an
+ *  embed that runs the SDK, the tool's host label fits, and an embed Narai hosts (a relative url) is one of the files. */
 function contractProblems(m: ToolManifest): string[] {
   const problems: string[] = [];
   const declared = new Set(Object.keys(m.payloads ?? {}));
@@ -53,7 +56,13 @@ function contractProblems(m: ToolManifest): string[] {
   if (!speaks && (declares(m.answers) || declares(m.commands))) {
     problems.push("/surfaces/embed: commands and answers need an embed that runs the SDK (sdk: ^1)");
   }
+  const [publisher, name] = m.id.split("/") as [string, string];
+  if (name.length + 2 + publisher.length > LABEL_MAX) problems.push(`/id its host label ${name}--${publisher} is longer than ${LABEL_MAX} characters`);
   const paths = (m.files ?? []).map((f) => f.path);
+  const url = m.surfaces.embed?.url;
+  if (url !== undefined && !url.startsWith("https://") && !paths.includes(url)) {
+    problems.push(`/surfaces/embed/url ${url} is relative, so it names one of the files, and none is`);
+  }
   if (paths.some((p, i) => i > 0 && p <= (paths[i - 1] as string))) problems.push("/files aren't sorted by path (each once)");
   return problems;
 }

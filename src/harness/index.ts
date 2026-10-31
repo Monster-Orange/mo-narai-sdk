@@ -74,15 +74,18 @@ export async function startHarness(options: HarnessOptions): Promise<Harness> {
   const embed = options.manifest.surfaces.embed;
   if (!embed) throw new Error(`${options.manifest.id} has no embed surface: there's nothing to mount`);
   const toolDir = resolve(options.toolDir);
-  const embedPath = new URL(embed.url, "http://tool.invalid").pathname;
-  const embedDir = embedPath.slice(0, embedPath.lastIndexOf("/") + 1);
+  const embedPath = new URL(embed.url, "http://tool.invalid/").pathname;
+  // an embed Narai hosts (a relative url) is a path from the bundle's root, which Narai serves at the tool's origin
+  const hosted = !embed.url.startsWith("https://");
+  const embedDir = hosted ? "/" : embedPath.slice(0, embedPath.lastIndexOf("/") + 1);
   const events: HarnessEvent[] = [];
   const payloads = payloadChecks(options.manifest);
 
   const toolServer = createServer((req, res) => {
     const path = new URL(req.url ?? "/", "http://x").pathname;
     if (path.startsWith("/sdk/")) { void serveFile(res, SDK_DIR, path.slice("/sdk/".length)); return; }
-    // the tool's files are at the embed URL's directory: /tool/ is toolDir/index.html, /tool/app.js toolDir/app.js
+    // the tool's files are at the embed URL's directory: /tool/ is toolDir/index.html, /tool/app.js toolDir/app.js (a
+    // hosted embed's directory is the root)
     if (!path.startsWith(embedDir)) { res.writeHead(404).end(); return; }
     const relative = path.slice(embedDir.length);
     void serveFile(res, toolDir, relative === "" || relative.endsWith("/") ? `${relative}index.html` : relative);

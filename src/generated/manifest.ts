@@ -98,7 +98,7 @@ export interface Surfaces {
  */
 export interface Embed {
   /**
-   * the tool's page; its origin is the frame's origin
+   * the tool's page: an https URL it hosts itself (its origin is the frame's origin), or one of its files by relative path, hosted by Narai at the tool's own origin in each environment
    */
   url: string;
   sdk: string;

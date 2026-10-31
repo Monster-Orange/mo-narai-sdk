@@ -97,10 +97,14 @@ function bucket(burst: number, perMinute: number, now: () => number) {
   };
 }
 
-/** The tool's origin: where its embed surface is. The port goes there and nowhere else. */
+/** The tool's origin: where its embed surface is. The port goes there and nowhere else. An embed Narai hosts (a
+ *  relative url) has none until Narai resolves it to the tool's own origin: mount a manifest with that URL. */
 export function toolOrigin(manifest: ToolManifest): string {
   const url = manifest.surfaces.embed?.url;
   if (!url) throw new Error(`${manifest.id} has no embed surface`);
+  if (!url.startsWith("https://") && !url.startsWith("http://")) {
+    throw new Error(`${manifest.id}'s embed url ${url} is relative: mount it with the URL Narai resolved it to`);
+  }
   return new URL(url).origin;
 }
 
