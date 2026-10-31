@@ -817,6 +817,74 @@
         "hit"
       ],
       "extras": 0
+    },
+    {
+      "name": "an ordered note's wrong_pitch is only a note between its neighbours' matches",
+      "ordered": true,
+      "expected": [
+        {
+          "pitch": 60
+        },
+        {
+          "pitch": 62
+        },
+        {
+          "pitch": 64
+        }
+      ],
+      "played": [
+        {
+          "pitch": 63,
+          "at_ms": 0
+        },
+        {
+          "pitch": 60,
+          "at_ms": 300
+        },
+        {
+          "pitch": 64,
+          "at_ms": 600
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "missed",
+        "hit"
+      ],
+      "extras": 1
+    },
+    {
+      "name": "an ordered note is looked for only after the note before it",
+      "ordered": true,
+      "expected": [
+        {
+          "pitch": 62
+        },
+        {
+          "pitch": 60
+        }
+      ],
+      "played": [
+        {
+          "pitch": 60,
+          "at_ms": 0
+        },
+        {
+          "pitch": 62,
+          "at_ms": 300
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "missed"
+      ],
+      "extras": 1
     }
   ]
 }
