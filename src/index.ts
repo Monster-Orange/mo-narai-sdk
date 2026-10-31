@@ -7,3 +7,4 @@ export {
 export { ToolMessageError, type PortLike, type Refusal } from "./port.js";
 export { connect, session, type ConnectEvent, type ConnectOptions, type PracticeReport, type ToolSession, type ToolWindow } from "./tool.js";
 export { mountTool, toolOrigin, type HelloEvent, type HostSession, type HostWindow, type MountOptions, type ToolFrame } from "./host.js";
+export { MUSIC_PAYLOADS, musicPayloads, type MusicNeckPreset, type MusicNeckState, type MusicNote, type MusicPlayed, type MusicTabPractice } from "./music.js";

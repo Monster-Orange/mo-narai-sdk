@@ -1,6 +1,7 @@
 import type { ToolManifest } from "./generated/manifest.js";
 import { validateManifest, type ValidationError } from "./generated/validators.js";
 import { VERDICT_KEYS } from "./verdicts.js";
+import { musicVariants } from "./music.js";
 
 export type { ToolManifest } from "./generated/manifest.js";
 
@@ -33,6 +34,7 @@ function contractProblems(m: ToolManifest): string[] {
   for (const [where, ref] of named) {
     if (!declared.has(ref)) problems.push(`${where} names ${ref}, which isn't declared under /payloads`);
   }
+  problems.push(...musicVariants(m.payloads));
   for (const ref of new Set(Object.values(m.answers ?? {}))) {
     const verdict = verdictProperty(m.payloads?.[ref], `/payloads/${ref}`);
     if (verdict) problems.push(`${verdict}: an answer carries what the learner did, never a verdict (Narai judges)`);
