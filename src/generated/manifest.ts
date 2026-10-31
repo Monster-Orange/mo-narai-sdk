@@ -41,6 +41,12 @@ export interface ToolManifest {
     [k: string]: string;
   };
   /**
+   * item kind -> the payload its task carries (what to show), for kinds that carry one
+   */
+  task_payloads?: {
+    [k: string]: string;
+  };
+  /**
    * activity -> the payload it is set up with
    */
   practice?: {
