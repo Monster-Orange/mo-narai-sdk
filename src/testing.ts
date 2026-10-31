@@ -60,8 +60,6 @@ export interface LaunchOptions {
   practiceLimit?: MountOptions["practiceLimit"];
   /** How long the host waits for a command's or a state request's answer (MountOptions). */
   commandTimeoutMs?: number;
-  /** The host takes a reloaded frame's hello (MountOptions.reconnect; default off, as Narai's host). */
-  reconnect?: boolean;
   /** The host's storage (default: a fresh memoryStorage()). */
   storage?: HostStorage;
   now?: () => number;
@@ -90,6 +88,8 @@ export interface Launched {
   toolRefused: Refusal[];
   /** Writes straight to the tool's end of the port, around the SDK: what a tool that skips it would send. */
   forge(message: unknown): void;
+  /** Writes on the first connection's port after a reconnect: what a reloaded frame's old page could still send. */
+  forgeOnOldPort(message: unknown): void;
   /** Writes straight to the host's end of the port, around the SDK: what another host could send the tool. */
   forgeToTool(message: unknown): void;
   /** Posts on the tool's window, as another page could. */
@@ -98,8 +98,7 @@ export interface Launched {
   postToHost: ReturnType<typeof browserPair>["postToHost"];
   /** The origins the host has posted a connect to (one, at the tool's origin, after the hello). */
   connects: readonly string[];
-  /** The tool frame reloaded: its SDK says hello again; with `reconnect`, it gets a new port to the same launch (its
-   *  storage still there), else no answer. */
+  /** The tool frame reloaded: its SDK says hello again and gets a new port to the same launch (its storage still there). */
   reconnect(): Promise<ToolSession>;
   /** Lets every message in flight arrive. */
   settle(): Promise<void>;
@@ -141,7 +140,7 @@ export async function launch(manifest: ToolManifest, options: LaunchOptions = {}
     },
   };
   mount.storage = options.storage ?? memoryStorage();
-  for (const key of ["task", "preset", "conventions", "practiceLimit", "commandTimeoutMs", "reconnect", "now"] as const) {
+  for (const key of ["task", "preset", "conventions", "practiceLimit", "commandTimeoutMs", "now"] as const) {
     if (options[key] !== undefined) (mount as unknown as Record<string, unknown>)[key] = options[key];
   }
   const host = mountTool(manifest, mount);
@@ -151,6 +150,7 @@ export async function launch(manifest: ToolManifest, options: LaunchOptions = {}
     tool, host, received, toolRefused,
     forge: (message) => channel.port2.postMessage(message),
     forgeToTool: (message) => channel.port1.postMessage(message),
+    forgeOnOldPort: (message) => channels[0]?.port2.postMessage(message),
     postToTool: pair.postToTool,
     postToHost: pair.postToHost,
     connects: pair.posted,

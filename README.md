@@ -43,7 +43,10 @@ tool.close("done");
 ### The wire
 
 The handshake: the tool says `tool.hello` to its parent once it's listening; Narai's host answers on the window with
-`narai.tool.connect` and a `MessagePort`, from a listed origin only; every later message travels on the port. Both sides
+`narai.tool.connect` and a `MessagePort`, from a listed origin only; every later message travels on the port. A tool
+frame that reloads says hello again and is connected again, on a new port, to the same launch (its storage kept, the
+start sent again, ready said again); the old port is closed, so only one is ever live. A hello from any other page or
+origin is never answered. Both sides
 check every message against the envelope (`schema/envelope.schema.json`) and the manifest, and refuse what it doesn't
 declare: a command it doesn't list, a payload in another schema, a verdict (`correct`, `score`, `passed` …) anywhere
 in an answer, a payload over 64 KB, a message for another launch.
