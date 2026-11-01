@@ -99,6 +99,7 @@ export interface Surfaces {
   service?: Service | null;
   import?: Import | null;
   device?: Device | null;
+  account_link?: AccountLink | null;
 }
 /**
  * A page Narai frames. `sdk: none` is a passive tool: shown, never spoken to.
@@ -155,6 +156,28 @@ export interface Import {
  */
 export interface Device {
   kinds?: string[];
+}
+/**
+ * The publisher's account linking: a learner with an account on both sides links them on
+ * Narai's consent screen. Not a surface of the tool: Narai accepts the client for the publisher's links only when a
+ * reviewed version declares it here.
+ *
+ * This interface was referenced by `ToolManifest`'s JSON-Schema
+ * via the `definition` "AccountLink".
+ */
+export interface AccountLink {
+  /**
+   * the publisher's own page that starts linking (its "Connect Narai")
+   */
+  url: string;
+  /**
+   * the publisher's OAuth client metadata document: the only client accepted for its links
+   */
+  client_id: string;
+  /**
+   * where Narai posts the signed account.unlinked event when a link ends
+   */
+  webhook: string;
 }
 /**
  * What the tool's frame may use; anything not listed here is not granted. A device (`Grant`) is used only in a

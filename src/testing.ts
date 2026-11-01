@@ -58,6 +58,8 @@ export interface LaunchOptions {
   conventions?: Payload;
   /** What the step grants (MountOptions): the manifest's capabilities filter it. */
   granted?: MountOptions["granted"];
+  /** The learner's subject (MountOptions): only a manifest with surfaces.account_link gets it. */
+  subject?: string;
   /** The host's practice limit (MountOptions). */
   practiceLimit?: MountOptions["practiceLimit"];
   /** How long the host waits for a command's or a state request's answer (MountOptions). */
@@ -148,7 +150,7 @@ export async function launch(manifest: ToolManifest, options: LaunchOptions = {}
     },
   };
   mount.storage = options.storage ?? memoryStorage();
-  for (const key of ["task", "preset", "conventions", "practiceLimit", "commandTimeoutMs", "now"] as const) {
+  for (const key of ["task", "preset", "conventions", "subject", "practiceLimit", "commandTimeoutMs", "now"] as const) {
     if (options[key] !== undefined) (mount as unknown as Record<string, unknown>)[key] = options[key];
   }
   const host = mountTool(manifest, mount);

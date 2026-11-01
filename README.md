@@ -4,7 +4,8 @@ Build tools that run inside Narai lessons.
 
 A tool is a small web app that Narai mounts in a sandboxed frame on its own origin. It shows the learner an
 instrument (a fretboard, a color wheel, a construction canvas) and reports what the learner did. Narai keeps the
-answer keys, runs every judge and owns the learner model: a tool never grades and never learns who the learner is.
+answer keys, runs every judge and owns the learner model: a tool never grades, and it never learns who the learner
+is, unless the learner linked their account with the tool's publisher and chose to let its tools know them.
 
 - **Learn it:** the course [Build a tool for Narai](https://beta.michinar.ai/go/course/narai-tools) goes from an empty folder
   to your first tool, one step at a time.
@@ -14,6 +15,8 @@ answer keys, runs every judge and owns the learner model: a tool never grades an
   `narai tools push`. The steps are the CLI's
   [Getting access](https://github.com/Monster-Orange/mo-narai-cli#getting-access). Building and the local harness need
   no account.
+- **Link accounts:** a publisher with accounts of its own can let learners link them, and offer Sign in with Narai:
+  [Account linking](https://github.com/Monster-Orange/mo-narai-sdk/blob/main/docs/account-linking.md).
 - **Read real ones:** [mo-narai-labs](https://github.com/Monster-Orange/mo-narai-labs), Narai's own tools (a fretboard,
   an interval trainer, a rhythm tapper), built only on this package.
 
@@ -71,6 +74,10 @@ const manifest = defineTool({ id: "you/echo", version: "0.1.0", sdk: "^1", /* â€
 const tool = await connect(manifest);   // takes Narai's host (NARAI_HOST_ORIGINS), waits CONNECT_TIMEOUT_MS
 
 tool.start;                       // the locale, its fallbacks, the step's preset, the task (if Narai judges one)
+tool.start.subject;               // only when the learner linked their account with your publisher and chose to let
+//   its tools know them (the manifest declares surfaces.account_link): their id with you, the same in every tool you
+//   publish. Never a name, an email or a Narai id; absent otherwise, so a tool works without it.
+//   how a publisher links accounts: the Account linking guide (top of this page)
 tool.onCommand("highlight", async (payload) => { /* only commands the manifest declares arrive */ });
 //   Narai is answered once the handler is done: an ack, or an error when it throws (`failed`);
 //   throw new CommandRefused("unsupported", "No capo on this neck.") to say why it wasn't done

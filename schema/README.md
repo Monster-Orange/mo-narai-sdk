@@ -29,5 +29,6 @@ when one fails:
 - commands and answers need an embed surface that runs the SDK;
 - an embed Narai hosts (a relative `surfaces.embed.url`) names one of `files`;
 - the tool's host label, `<name>--<publisher>`, is at most 63 characters;
+- `surfaces.account_link`'s `url`, `client_id` and `webhook` are on one origin;
 - `files` are sorted by path, and `bundle_digest` is the sha256 of their canonical JSON (RFC 8785);
 - every file the manifest lists is uploaded, unchanged, and nothing else.

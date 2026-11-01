@@ -26,7 +26,7 @@ describe("@michinarai/sdk/testing", () => {
 });
 
 describe("forging onto the host's window (#10)", () => {
-  // Ward, 2026-10-31: a reload's hello from the tool's own frame, at its origin, reconnects it to the same launch; a hello
+  // A reload's hello from the tool's own frame, at its origin, reconnects it to the same launch; a hello
   // from anywhere else is refused, and only one port is ever live.
   it("a second hello from the tool's frame reconnects it on a new port; the old one is closed", async () => {
     const run = await launch(ECHO, { task: TASK });

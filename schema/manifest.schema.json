@@ -2,6 +2,40 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://michinar.ai/schema/tool-manifest/1.json",
   "$defs": {
+    "AccountLink": {
+      "additionalProperties": false,
+      "description": "The publisher's account linking: a learner with an account on both sides links them on\nNarai's consent screen. Not a surface of the tool: Narai accepts the client for the publisher's links only when a\nreviewed version declares it here.",
+      "properties": {
+        "url": {
+          "description": "the publisher's own page that starts linking (its \"Connect Narai\")",
+          "maxLength": 500,
+          "pattern": "^https://\\S+$",
+          "title": "Url",
+          "type": "string"
+        },
+        "client_id": {
+          "description": "the publisher's OAuth client metadata document: the only client accepted for its links",
+          "maxLength": 500,
+          "pattern": "^https://\\S+$",
+          "title": "Client Id",
+          "type": "string"
+        },
+        "webhook": {
+          "description": "where Narai posts the signed account.unlinked event when a link ends",
+          "maxLength": 500,
+          "pattern": "^https://\\S+$",
+          "title": "Webhook",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url",
+        "client_id",
+        "webhook"
+      ],
+      "title": "AccountLink",
+      "type": "object"
+    },
     "Capabilities": {
       "additionalProperties": false,
       "description": "What the tool's frame may use; anything not listed here is not granted. A device (`Grant`) is used only in a\nlaunch whose step grants it.",
@@ -242,6 +276,17 @@
           "anyOf": [
             {
               "$ref": "#/$defs/Device"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "account_link": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AccountLink"
             },
             {
               "type": "null"

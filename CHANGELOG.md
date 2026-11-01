@@ -3,6 +3,25 @@
 0.x: the contract (the manifest, the wire, the registry's API) can still change between minor versions; this file says
 how. A version's entry lists what a tool or a host has to change, first.
 
+## 0.3.3
+
+Nothing to change in a tool. A host that mounts tools: pass `subject` to `mountTool` when Narai's launch carries one.
+
+- Account linking. A manifest may declare `surfaces.account_link`: the publisher's page that starts linking (`url`),
+  its OAuth client metadata document (`client_id`) and where Narai posts `account.unlinked` (`webhook`), each https.
+- `narai.tool.start` gains an optional `subject`: the learner's id with the tool's publisher (43 URL-safe characters),
+  the same for every tool that publisher ships. It's there only when the learner linked their account with the
+  publisher and chose to let its tools know them, and only for a manifest that declares `surfaces.account_link`. It is
+  never a name, an email or a Narai id. The rule: a tool never learns who the learner is, unless the learner linked
+  their account with the tool's publisher and chose to let its tools know them.
+- `mountTool({ subject })` passes it on; for a manifest without `surfaces.account_link` it's dropped, and the launch
+  still starts. A start that carries a subject to such a manifest is refused. Every other message refuses `subject`.
+  The testing `launch()` takes `subject`.
+- `manifestProblems()` refuses an `account_link` whose three URLs aren't on one origin, as Narai's registry does.
+- `docs/account-linking.md`: how a publisher links accounts. The client metadata document, the manifest, Sign in with
+  Narai (discovery, PKCE, the scopes, `prompt=none`), the ID token, the subject in tools, the signed `account.unlinked`
+  webhook and revocation.
+
 ## 0.3.2
 
 Nothing to change in a tool. A host that mounts tools: handle `onKey` (below) to close what the tool is shown in.

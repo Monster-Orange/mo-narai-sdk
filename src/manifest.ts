@@ -23,7 +23,8 @@ export function describe(errors: readonly ValidationError[] | null | undefined):
 
 /** What the registry checks beyond the schema (schema/README.md), checked here too so a tool finds out before it uploads:
  *  every payload a manifest names is declared, no answer payload carries a verdict, commands and answers need an
- *  embed that runs the SDK, the tool's host label fits, and an embed Narai hosts (a relative url) is one of the files. */
+ *  embed that runs the SDK, the tool's host label fits, an embed Narai hosts (a relative url) is one of the files, and
+ *  account linking's three URLs are on one origin. */
 function contractProblems(m: ToolManifest): string[] {
   const problems: string[] = [];
   const declared = new Set(Object.keys(m.payloads ?? {}));
@@ -64,6 +65,10 @@ function contractProblems(m: ToolManifest): string[] {
     problems.push(`/surfaces/embed/url ${url} is relative, so it names one of the files, and none is`);
   }
   if (paths.some((p, i) => i > 0 && p <= (paths[i - 1] as string))) problems.push("/files aren't sorted by path (each once)");
+  const link = m.surfaces.account_link;
+  if (link && new Set([link.url, link.client_id, link.webhook].map((u) => URL.canParse(u) ? new URL(u).origin : u)).size !== 1) {
+    problems.push("/surfaces/account_link: url, client_id and webhook are on one origin");
+  }
   return problems;
 }
 
