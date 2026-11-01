@@ -20,7 +20,8 @@ export type ToolMessage =
   | Ready
   | Answer
   | Practice
-  | Close;
+  | Close
+  | Key;
 
 /**
  * Tool -> its parent window, once its SDK is listening: the host answers with the connect.
@@ -352,4 +353,22 @@ export interface Close {
    */
   launch: string;
   reason: "done" | "user" | "error";
+}
+/**
+ * Tool -> Narai: a key the learner pressed in the tool that the tool left alone, for the host to act on (Escape
+ * closes the dialog a tool is shown in, even while focus is in its frame). Escape only, so another key is a schema
+ * change, never drift. The SDK sends it after the event's whole dispatch, and only when it was not default-prevented, not a
+ * repeat and not part of an IME composition (an Escape that cancels a candidate never closes anything).
+ */
+export interface Key {
+  type: "tool.key";
+  /**
+   * The contract version.
+   */
+  v: 1;
+  /**
+   * Opaque, single use, expires. It stands in for the learner.
+   */
+  launch: string;
+  key: "Escape";
 }

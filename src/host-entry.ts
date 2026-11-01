@@ -5,5 +5,5 @@ export { COMMAND_TIMEOUT_MS, mountTool, toolOrigin, type CommandResult, type Gra
 export { httpStorage, memoryStorage, type FetchLike } from "./storage.js";
 export { CONNECT_TIMEOUT_MS, NARAI_HOST_ORIGINS } from "./origins.js";
 export type { Refusal } from "./port.js";
-export type { Answer, Close, CommandAck, CommandError, Payload, Practice, Ready, State, Task } from "./messages.js";
+export type { Answer, Close, CommandAck, CommandError, Key, Payload, Practice, Ready, State, Task } from "./messages.js";
 export type { ToolManifest } from "./manifest.js";

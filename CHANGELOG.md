@@ -3,6 +3,18 @@
 0.x: the contract (the manifest, the wire, the registry's API) can still change between minor versions; this file says
 how. A version's entry lists what a tool or a host has to change, first.
 
+## 0.3.2
+
+Nothing to change in a tool. A host that mounts tools: handle `onKey` (below) to close what the tool is shown in.
+
+- `tool.key`: an Escape the learner pressed in the tool, sent to the host, so Escape closes the dialog a tool is shown
+  in even while focus is in its frame. `connect()` sends it; the tool does nothing. It goes only after the keydown's
+  whole dispatch, and only when the tool didn't `preventDefault()` it (a tool's own popup keeps its Escape), it isn't a
+  repeat, and it isn't part of an IME composition (an Escape that cancels a candidate never closes anything). Escape
+  is the only key. `mountTool({ onKey })` hears it, even before `tool.ready`; `ConnectOptions.keys` says where keys are
+  heard (the tool's window by default), and the testing `launch()` takes `keys` and records `received.keys`.
+  `narai dev`'s harness logs it.
+
 ## 0.3.1
 
 Nothing to change.
