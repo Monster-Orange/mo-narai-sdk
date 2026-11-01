@@ -23,6 +23,9 @@ export interface HarnessOptions {
   task?: Task;
   /** What the step grants, simulated (`narai dev --grant microphone`): the manifest's capabilities filter it. */
   granted?: readonly Grant[];
+  /** A learner who linked their account with the tool's publisher and chose to let its tools know them, simulated
+   *  (`narai dev --subject`): their id with the publisher. Only a manifest that declares surfaces.account_link gets it. */
+  subject?: string;
 }
 
 export interface HarnessEvent { at: number; direction: "in" | "out"; type: string; ok: boolean; reason?: string; message: unknown }
@@ -107,7 +110,7 @@ export async function startHarness(options: HarnessOptions): Promise<Harness> {
       const launch = `lch_dev${Math.random().toString(36).slice(2, 12)}`;
       res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" }).end(JSON.stringify({
         manifest, launch, locale: options.locale ?? manifest.locales?.[0] ?? "en", fallback: options.fallback ?? [],
-        preset: options.preset, task: options.task, granted: options.granted ?? [],
+        preset: options.preset, task: options.task, granted: options.granted ?? [], subject: options.subject,
       }));
     } else if (path === "/events" && req.method === "POST") {
       void body(req).then((text) => {

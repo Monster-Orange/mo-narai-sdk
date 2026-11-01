@@ -6,7 +6,7 @@ import type { Payload, Task } from "../generated/envelope.js";
 import type { HarnessEvent } from "./index.js";
 import type { ToolManifest } from "../generated/manifest.js";
 
-interface Config { manifest: ToolManifest; launch: string; locale: string; fallback: string[]; preset?: Payload; task?: Task; granted: Grant[] }
+interface Config { manifest: ToolManifest; launch: string; locale: string; fallback: string[]; preset?: Payload; task?: Task; granted: Grant[]; subject?: string }
 
 declare global { interface Window { __narai: { events: HarnessEvent[]; ready: boolean } } }
 
@@ -43,6 +43,8 @@ const session = mountTool(config.manifest, {
   ...(config.preset ? { preset: config.preset } : {}),
   ...(config.task ? { task: config.task } : {}),
   granted: config.granted,
+  // as Narai's host does: dropped for a manifest that declares no account linking
+  ...(config.subject ? { subject: config.subject } : {}),
   onReady: (m) => { window.__narai.ready = true; record_in(m); },
   // as Narai's host does: the learner is told the tool is shown in another language
   onFallback: (f) => {
@@ -58,6 +60,7 @@ const session = mountTool(config.manifest, {
   onState: record_in,
   onCommandAnswer: record_in,
   onCommandSent: (m) => void record("out", m),
+  onStart: (m) => void record("out", m),
   // a launch's storage, both ways: the tool's call, and the host's answer (sdk#19)
   onStorage: (call, result) => { record_in(call); void record("out", result); },
   // a launch's storage, kept in this page's memory (Narai's host keeps it on the server)
