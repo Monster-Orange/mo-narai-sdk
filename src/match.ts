@@ -4,7 +4,7 @@ export interface ExpectedNote { readonly pitch?: number | null; readonly at_ms?:
 /** A note a tool heard (music.played@1's notes, music.taps@1's taps): a tap has no pitch. */
 export interface PlayedNote { readonly pitch?: number | null; readonly at_ms: number }
 export type MatchOutcome = "hit" | "wrong_pitch" | "early" | "late" | "missed";
-export interface MatchOptions { readonly latencyMs: number; readonly pitchTolerance: number; readonly timingMs: number }
+export interface MatchOptions { readonly latencyMs: number; readonly pitchTolerance: number; readonly timingMs: number; readonly ordered?: boolean }
 export interface MusicMatch { readonly outcomes: MatchOutcome[]; readonly extras: number; readonly hits: number }
 
 /** Narai's play_passage and play_rhythm matcher, as a tool's preview: what Narai will grade, from the same shared cases
@@ -13,9 +13,13 @@ export interface MusicMatch { readonly outcomes: MatchOutcome[]; readonly extras
  *  is a hit; then the nearest unused note of its pitch outside the window makes it early or late; then the earliest
  *  unused note of another pitch in its window is a wrong_pitch; else it is missed. `extras` counts the played notes no
  *  expected note took. A note without a pitch matches on time alone; an expected note without `at_ms` is untimed: every
- *  played note is in its window, so it is a hit, a wrong_pitch or missed, never early or late. Narai decides: a tool shows this, never sends it. */
+ *  played note is in its window, so it is a hit, a wrong_pitch or missed, never early or late. `ordered` (a passage
+ *  whose notes have no `at_ms`, played in order at any pace; `timingMs` is unused): each note, in the passage's order,
+ *  is a hit on the earliest unused note of its pitch after the last hit; then a note still open is a wrong_pitch on the
+ *  earliest unused note between its neighbours' notes; else missed. Never early or late. Narai decides: a tool shows this, never sends it. */
 export function musicMatch(expected: readonly ExpectedNote[], played: readonly PlayedNote[], options: MatchOptions): MusicMatch {
   const { latencyMs, pitchTolerance, timingMs } = options;
+  if (options.ordered) return inOrder(expected, played, latencyMs, pitchTolerance);
   const wanted = expected.map((note, index) => ({ note, index })).sort((a, b) => (a.note.at_ms ?? 0) - (b.note.at_ms ?? 0) || a.index - b.index);
   const sounded = played.map((n) => ({ at: n.at_ms - latencyMs, pitch: n.pitch ?? null })).sort((a, b) => a.at - b.at || (a.pitch ?? 0) - (b.pitch ?? 0));
   type Sounded = (typeof sounded)[number];
@@ -43,4 +47,33 @@ export function musicMatch(expected: readonly ExpectedNote[], played: readonly P
   claim(() => "wrong_pitch", inWindow);
   const list = expected.map((_, i) => outcomes.get(i) ?? "missed");
   return { outcomes: list, extras: used.filter((u) => !u).length, hits: list.filter((o) => o === "hit").length };
+}
+
+function inOrder(expected: readonly ExpectedNote[], played: readonly PlayedNote[], latencyMs: number, pitchTolerance: number): MusicMatch {
+  const sounded = played.map((n) => ({ at: n.at_ms - latencyMs, pitch: n.pitch ?? null })).sort((a, b) => a.at - b.at || (a.pitch ?? 0) - (b.pitch ?? 0));
+  const used = sounded.map(() => false);
+  const took = new Map<number, number>();
+  let after = 0;
+  expected.forEach((note, index) => {
+    const found = sounded.findIndex((heard, i) =>
+      i >= after && !used[i] && (heard.pitch === null || note.pitch == null || Math.abs(heard.pitch - note.pitch) <= pitchTolerance));
+    if (found < 0) return;
+    used[found] = true;
+    took.set(index, found);
+    after = found + 1;
+  });
+  const outcomes = expected.map((): MatchOutcome => "missed");
+  for (const index of took.keys()) outcomes[index] = "hit";
+  expected.forEach((_, index) => {
+    if (took.has(index)) return;
+    const taken = [...took];
+    const low = Math.max(-1, ...taken.filter(([i]) => i < index).map(([, at]) => at));
+    const high = Math.min(sounded.length, ...taken.filter(([i]) => i > index).map(([, at]) => at));
+    const found = used.findIndex((u, i) => !u && i > low && i < high);
+    if (found < 0) return;
+    used[found] = true;
+    took.set(index, found);
+    outcomes[index] = "wrong_pitch";
+  });
+  return { outcomes, extras: used.filter((u) => !u).length, hits: outcomes.filter((o) => o === "hit").length };
 }

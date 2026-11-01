@@ -1,5 +1,5 @@
 {
-  "about": "The play_passage matcher's cases (narai.tools.music_match.match; 2026-10-31: Narai owns music.* and play_passage). Narai's judge and the SDK's matcher (a tool's preview) both run every case and must agree. A played note's time is at_ms - latency_ms; each expected note, in time order, takes the earliest unused played note within timing_ms and pitch_tolerance semitones (pitches are MIDI numbers, as music.played@1 carries them). A note with no pitch (a rhythm's onset, a tap) matches on time alone. Outcomes per expected note: hit, wrong_pitch (a note in its window, another pitch), early or late (its pitch, outside the window), missed. extras: played notes no expected note took. An expected note with no at_ms is untimed (a one-note target): every played note is in its window, so it is a hit, wrong_pitch or missed, never early or late.",
+  "about": "The play_passage matcher's cases (narai.tools.music_match.match; 2026-10-31: Narai owns music.* and play_passage). Narai's judge and the SDK's matcher (a tool's preview) both run every case and must agree. A played note's time is at_ms - latency_ms; each expected note, in time order, takes the earliest unused played note within timing_ms and pitch_tolerance semitones (pitches are MIDI numbers, as music.played@1 carries them). A note with no pitch (a rhythm's onset, a tap) matches on time alone. Outcomes per expected note: hit, wrong_pitch (a note in its window, another pitch), early or late (its pitch, outside the window), missed. extras: played notes no expected note took. An expected note with no at_ms is untimed (a one-note target): every played note is in its window, so it is a hit, wrong_pitch or missed, never early or late. A case with \"ordered\": true is an ordered passage (no at_ms): each expected note, in the key's order, takes the earliest unused played note of its pitch after the previous one taken (a hit), at any time; a note left open takes the earliest unused played note between its neighbours' (a wrong_pitch), else it is missed. Never early or late.",
   "version": 1,
   "cases": [
     {
@@ -597,6 +597,294 @@
         "hit"
       ],
       "extras": 0
+    },
+    {
+      "name": "an ordered passage played in order is all hits, however slowly",
+      "ordered": true,
+      "expected": [
+        {
+          "pitch": 60
+        },
+        {
+          "pitch": 62
+        },
+        {
+          "pitch": 64
+        }
+      ],
+      "played": [
+        {
+          "pitch": 60,
+          "at_ms": 0
+        },
+        {
+          "pitch": 62,
+          "at_ms": 5000
+        },
+        {
+          "pitch": 64,
+          "at_ms": 9000
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "hit",
+        "hit"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "an ordered passage played backwards: only the first note found keeps its place",
+      "ordered": true,
+      "expected": [
+        {
+          "pitch": 60
+        },
+        {
+          "pitch": 62
+        },
+        {
+          "pitch": 64
+        }
+      ],
+      "played": [
+        {
+          "pitch": 64,
+          "at_ms": 0
+        },
+        {
+          "pitch": 62,
+          "at_ms": 100
+        },
+        {
+          "pitch": 60,
+          "at_ms": 200
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "missed",
+        "missed"
+      ],
+      "extras": 2
+    },
+    {
+      "name": "an ordered note played as another pitch in its place is a wrong_pitch",
+      "ordered": true,
+      "expected": [
+        {
+          "pitch": 60
+        },
+        {
+          "pitch": 62
+        },
+        {
+          "pitch": 64
+        }
+      ],
+      "played": [
+        {
+          "pitch": 60,
+          "at_ms": 0
+        },
+        {
+          "pitch": 63,
+          "at_ms": 400
+        },
+        {
+          "pitch": 64,
+          "at_ms": 800
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "wrong_pitch",
+        "hit"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "an ordered repeated pitch takes the next one after the last match",
+      "ordered": true,
+      "expected": [
+        {
+          "pitch": 60
+        },
+        {
+          "pitch": 60
+        },
+        {
+          "pitch": 62
+        }
+      ],
+      "played": [
+        {
+          "pitch": 60,
+          "at_ms": 0
+        },
+        {
+          "pitch": 62,
+          "at_ms": 300
+        },
+        {
+          "pitch": 60,
+          "at_ms": 600
+        },
+        {
+          "pitch": 62,
+          "at_ms": 900
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "hit",
+        "hit"
+      ],
+      "extras": 1
+    },
+    {
+      "name": "notes between ordered matches that no note takes are extras",
+      "ordered": true,
+      "expected": [
+        {
+          "pitch": 60
+        },
+        {
+          "pitch": 64
+        }
+      ],
+      "played": [
+        {
+          "pitch": 60,
+          "at_ms": 0
+        },
+        {
+          "pitch": 61,
+          "at_ms": 300
+        },
+        {
+          "pitch": 64,
+          "at_ms": 600
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "hit"
+      ],
+      "extras": 1
+    },
+    {
+      "name": "an ordered note within the pitch tolerance is a hit",
+      "ordered": true,
+      "expected": [
+        {
+          "pitch": 60
+        },
+        {
+          "pitch": 62
+        }
+      ],
+      "played": [
+        {
+          "pitch": 60,
+          "at_ms": 0
+        },
+        {
+          "pitch": 63,
+          "at_ms": 500
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 1,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "hit"
+      ],
+      "extras": 0
+    },
+    {
+      "name": "an ordered note's wrong_pitch is only a note between its neighbours' matches",
+      "ordered": true,
+      "expected": [
+        {
+          "pitch": 60
+        },
+        {
+          "pitch": 62
+        },
+        {
+          "pitch": 64
+        }
+      ],
+      "played": [
+        {
+          "pitch": 63,
+          "at_ms": 0
+        },
+        {
+          "pitch": 60,
+          "at_ms": 300
+        },
+        {
+          "pitch": 64,
+          "at_ms": 600
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "missed",
+        "hit"
+      ],
+      "extras": 1
+    },
+    {
+      "name": "an ordered note is looked for only after the note before it",
+      "ordered": true,
+      "expected": [
+        {
+          "pitch": 62
+        },
+        {
+          "pitch": 60
+        }
+      ],
+      "played": [
+        {
+          "pitch": 60,
+          "at_ms": 0
+        },
+        {
+          "pitch": 62,
+          "at_ms": 300
+        }
+      ],
+      "latency_ms": 0,
+      "pitch_tolerance": 0,
+      "timing_ms": 120,
+      "outcomes": [
+        "hit",
+        "missed"
+      ],
+      "extras": 1
     }
   ]
 }
