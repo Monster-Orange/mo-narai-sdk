@@ -11,6 +11,10 @@ is, unless the learner linked their account with the tool's publisher and chose 
   to your first tool, one step at a time.
 - **Start one:** the command line, [`@michinarai/cli`](https://github.com/Monster-Orange/mo-narai-cli) (`narai init`,
   `narai dev`, `narai validate`, `narai build`).
+- **Put one in a lesson:** a Narai account and the developer beta, then `narai login`, `narai tools register` and
+  `narai tools push`. The steps are the CLI's
+  [Getting access](https://github.com/Monster-Orange/mo-narai-cli#getting-access). Building and the local harness need
+  no account.
 - **Read real ones:** [mo-narai-labs](https://github.com/Monster-Orange/mo-narai-labs), Narai's own tools (a fretboard,
   an interval trainer, a rhythm tapper), built only on this package.
 
