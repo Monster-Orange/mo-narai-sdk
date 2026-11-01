@@ -243,8 +243,9 @@ a JWT whose header has `typ: account-unlinked+jwt` and `alg: ES256`. Its claims:
 | `event` | `"account.unlinked"` |
 
 It carries no name and no email. Verify it with the same JWKS, then end the link on your side (forget the subject on
-that account) and answer with any 2xx. Any other answer, or none in 10 seconds, is retried with backoff for a few
-minutes. An event is delivered at least once, so it can arrive more than once: dedupe by `jti` (the link's id).
+that account) and answer with any 2xx. Any other answer, or none in 10 seconds, is retried 7 times over about a day
+(after 1 min, 5 min, 30 min, 2 h, 6 h, 6 h and 9 h), then dropped. An event is delivered at least once, so it can
+arrive more than once: dedupe by `jti` (the link's id).
 
 ```js
 export async function unlinked(body) {
@@ -257,6 +258,18 @@ export async function unlinked(body) {
 ```
 
 Your webhook must be an https URL whose host resolves to public addresses; Narai follows no redirect.
+
+### Don't rely on the webhook alone
+
+The link has already ended in Narai when the event is sent, and a webhook that's down for longer than the retries
+never hears it. Two answers from Narai also mean the link ended, so treat either as unlinked:
+
+- a refresh that answers `invalid_grant`;
+- `/oauth/userinfo` answering 401.
+
+A grant can also end on its own (unused for too long, or after a token was presented twice) while the link lives on.
+The next time the learner is on your site, a sign-in with `prompt=none` tells the two apart: a code while the link is
+live, `consent_required` once it ended.
 
 ### You end it: revocation
 
