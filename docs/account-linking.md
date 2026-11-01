@@ -262,14 +262,12 @@ Your webhook must be an https URL whose host resolves to public addresses; Narai
 ### Don't rely on the webhook alone
 
 The link has already ended in Narai when the event is sent, and a webhook that's down for longer than the retries
-never hears it. Two answers from Narai also mean the link ended, so treat either as unlinked:
+never hears it.
 
-- a refresh that answers `invalid_grant`;
-- `/oauth/userinfo` answering 401.
-
-A grant can also end on its own (unused for too long, or after a token was presented twice) while the link lives on.
-The next time the learner is on your site, a sign-in with `prompt=none` tells the two apart: a code while the link is
-live, `consent_required` once it ended.
+A refresh that answers `invalid_grant`, or `/oauth/userinfo` answering 401, means these tokens are done: stop using
+them. They don't always mean the link ended (a grant also ends when it sits unused too long, or when a token is
+presented twice). The next time the learner is on your site, sign in with `prompt=none`. A code means the link is
+live, so keep the subject. `consent_required` means it ended, so forget the subject.
 
 ### You end it: revocation
 
