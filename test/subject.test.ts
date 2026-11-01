@@ -58,4 +58,10 @@ describe("a manifest's account linking", () => {
     const { webhook: _, ...noWebhook } = LINK;
     expect(manifestProblems({ ...withLink(), surfaces: { ...withLink().surfaces, account_link: noWebhook } })).not.toEqual([]);
   });
+
+  it("is on one origin, as the registry checks", () => {
+    const m = withLink();
+    m.surfaces.account_link = { ...LINK, webhook: "https://hooks.example/narai/unlinked" };
+    expect(manifestProblems(m)).toEqual(["/surfaces/account_link: url, client_id and webhook are on one origin"]);
+  });
 });

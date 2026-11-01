@@ -17,6 +17,10 @@ Nothing to change in a tool. A host that mounts tools: pass `subject` to `mountT
 - `mountTool({ subject })` passes it on; for a manifest without `surfaces.account_link` it's dropped, and the launch
   still starts. A start that carries a subject to such a manifest is refused. Every other message refuses `subject`.
   The testing `launch()` takes `subject`.
+- `manifestProblems()` refuses an `account_link` whose three URLs aren't on one origin, as Narai's registry does.
+- `docs/account-linking.md`: how a publisher links accounts. The client metadata document, the manifest, Sign in with
+  Narai (discovery, PKCE, the scopes, `prompt=none`), the ID token, the subject in tools, the signed `account.unlinked`
+  webhook and revocation.
 
 ## 0.3.2
 
