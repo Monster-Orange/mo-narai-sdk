@@ -286,6 +286,42 @@
       "title": "Hello",
       "type": "object"
     },
+    "Key": {
+      "additionalProperties": false,
+      "description": "Tool -> Narai: a key the learner pressed in the tool that the tool left alone, for the host to act on (Escape\ncloses the dialog a tool is shown in, even while focus is in its frame). Escape only, so another key is a schema\nchange, never drift. The SDK sends it after the event's whole dispatch, and only when it was not default-prevented, not a\nrepeat and not part of an IME composition (an Escape that cancels a candidate never closes anything).",
+      "properties": {
+        "type": {
+          "const": "tool.key",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "description": "The contract version.",
+          "title": "V",
+          "type": "integer"
+        },
+        "launch": {
+          "description": "Opaque, single use, expires. It stands in for the learner.",
+          "pattern": "^lch_[A-Za-z0-9_-]{8,64}$",
+          "title": "Launch",
+          "type": "string"
+        },
+        "key": {
+          "const": "Escape",
+          "title": "Key",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "v",
+        "launch",
+        "key"
+      ],
+      "title": "Key",
+      "type": "object"
+    },
     "LocaleSwitch": {
       "additionalProperties": false,
       "description": "Narai -> tool, when the learner switches language mid-session.",
@@ -925,6 +961,9 @@
     },
     {
       "$ref": "#/$defs/Close"
+    },
+    {
+      "$ref": "#/$defs/Key"
     }
   ]
 }

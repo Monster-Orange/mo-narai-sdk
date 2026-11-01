@@ -1,4 +1,4 @@
-import type { Answer, Close, Command, CommandAck, CommandError, Connect, Payload, Practice, Ready, Start, State, StorageDelete, StorageGet, StorageResult, StorageSet, Task, ToolMessage } from "./generated/envelope.js";
+import type { Answer, Close, Command, CommandAck, CommandError, Connect, Key, Payload, Practice, Ready, Start, State, StorageDelete, StorageGet, StorageResult, StorageSet, Task, ToolMessage } from "./generated/envelope.js";
 import type { ToolManifest } from "./generated/manifest.js";
 import { checkMessage, CONTRACT_VERSION, type PayloadCheck } from "./messages.js";
 import { Channel, type PortLike, type Refusal } from "./port.js";
@@ -35,6 +35,9 @@ export interface MountOptions {
   onAnswer?: (message: Answer) => void;
   onPractice?: (message: Practice) => void;
   onClose?: (message: Close) => void;
+  /** An Escape the learner pressed in the tool that the tool left alone (tool.key): close the dialog the tool is shown
+   *  in. It comes even before tool.ready. */
+  onKey?: (message: Key) => void;
   /** The tool rendered a locale other than the learner's (`locale`): the host shows its fallback notice. */
   onFallback?: (fallback: { requested: string; rendered: string }) => void;
   /** Every storage call the tool made, with the answer it got. */
@@ -142,7 +145,7 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
     map.set(id, (v) => { clearTimeout(timer); map.delete(id); resolve(v); });
   });
   const receive = (message: ToolMessage) => {
-    if (!ready && message.type !== "tool.ready" && message.type !== "tool.close") {
+    if (!ready && message.type !== "tool.ready" && message.type !== "tool.close" && message.type !== "tool.key") {
       refused({ reason: `${message.type} before tool.ready`, data: message });
       return;
     }
@@ -160,6 +163,7 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
         else refused({ reason: `practice over the limit (${limit.burst}, then ${limit.perMinute} a minute)`, data: message });
         break;
       case "tool.close": options.onClose?.(message as Close); channel.close(); break;
+      case "tool.key": options.onKey?.(message as Key); break;
       case "tool.command.ack": options.onCommandAnswer?.(message as CommandAck); commands.get((message as CommandAck).re)?.({ ok: true }); break;
       case "tool.command.error": {
         const e = message as CommandError;

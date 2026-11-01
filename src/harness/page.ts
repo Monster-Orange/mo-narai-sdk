@@ -54,6 +54,7 @@ const session = mountTool(config.manifest, {
   onAnswer: record_in,
   onPractice: record_in,
   onClose: record_in,
+  onKey: record_in,
   onState: record_in,
   onCommandAnswer: record_in,
   onCommandSent: (m) => void record("out", m),

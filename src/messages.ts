@@ -6,7 +6,7 @@ import { VERDICT_KEYS } from "./verdicts.js";
 
 export { VERDICT_KEYS } from "./verdicts.js";
 
-export type { Answer, Close, Command, CommandAck, CommandError, Connect, Hello, LocaleSwitch, Payload, Practice, Ready, Start, State, StateGet, StorageDelete, StorageGet, StorageResult, StorageSet, Task, ToolMessage } from "./generated/envelope.js";
+export type { Answer, Close, Command, CommandAck, CommandError, Connect, Hello, Key, LocaleSwitch, Payload, Practice, Ready, Start, State, StateGet, StorageDelete, StorageGet, StorageResult, StorageSet, Task, ToolMessage } from "./generated/envelope.js";
 
 /** The contract version this SDK speaks (`v` on every message). */
 export const CONTRACT_VERSION = 1;

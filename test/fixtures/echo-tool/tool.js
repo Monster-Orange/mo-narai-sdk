@@ -15,3 +15,5 @@ $("drill").onclick = () => tool.practice("drill", { duration_s: 5, attempts: 2, 
 $("cheat").onclick = () => {
   try { tool.answer({ schema: "echo.answer@1", text: "x", correct: true }); } catch (error) { $("error").textContent = error.message; }
 };
+// a tool's own popup, closed by Escape: the tool keeps that Escape (Narai never hears it)
+$("keeps-escape").addEventListener("keydown", (e) => { if (e.key === "Escape") e.preventDefault(); });

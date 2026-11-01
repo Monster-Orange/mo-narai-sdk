@@ -1,14 +1,14 @@
 // A tool's conformance kit (Node): its session against Narai's own host over a real MessageChannel, wired as a
 // browser wires an iframe, so a tool's tests launch it as a lesson does, and forge what a hostile page would.
 
-import type { Answer, Close, CommandAck, CommandError, Payload, Practice, Ready, State, StorageDelete, StorageGet, StorageResult, StorageSet, Task } from "./generated/envelope.js";
+import type { Answer, Close, CommandAck, CommandError, Key, Payload, Practice, Ready, State, StorageDelete, StorageGet, StorageResult, StorageSet, Task } from "./generated/envelope.js";
 import type { ToolManifest } from "./generated/manifest.js";
 import { mountTool, toolOrigin, type HelloEvent, type HostSession, type HostStorage, type HostWindow, type MountOptions, type ToolFrame } from "./host.js";
 import { memoryStorage } from "./storage.js";
 export { memoryStorage } from "./storage.js";
 import { payloadChecks } from "./payloads.js";
 import type { PortLike, Refusal } from "./port.js";
-import { connect, type ConnectEvent, type ToolSession, type ToolWindow } from "./tool.js";
+import { connect, type ConnectEvent, type KeyTarget, type ToolSession, type ToolWindow } from "./tool.js";
 export { CommandRefused } from "./tool.js";
 
 /** Narai's address, as the host the kit plays. */
@@ -65,6 +65,8 @@ export interface LaunchOptions {
   /** The host's storage (default: a fresh memoryStorage()). */
   storage?: HostStorage;
   now?: () => number;
+  /** Where the tool hears keys (ConnectOptions): dispatch a keydown on it to press one. */
+  keys?: KeyTarget;
 }
 
 /** What the host received, in order, and what it refused. */
@@ -79,6 +81,8 @@ export interface Received {
   commandAnswers: (CommandAck | CommandError)[];
   practice: Practice[];
   closes: Close[];
+  /** Each Escape the tool left alone (tool.key). */
+  keys: Key[];
   refused: Refusal[];
 }
 
@@ -115,9 +119,9 @@ export async function launch(manifest: ToolManifest, options: LaunchOptions = {}
   let channel = new MessageChannel();
   const channels = [channel];
   let first = true;
-  const received: Received = { ready: [], fallbacks: [], answers: [], states: [], commandAnswers: [], storage: [], practice: [], closes: [], refused: [] };
+  const received: Received = { ready: [], fallbacks: [], answers: [], states: [], commandAnswers: [], storage: [], practice: [], closes: [], keys: [], refused: [] };
   const toolRefused: Refusal[] = [];
-  const connected = connect(manifest, { hostOrigins: [HOST_ORIGIN], window: pair.toolWindow, onRefused: (r) => toolRefused.push(r) });
+  const connected = connect(manifest, { hostOrigins: [HOST_ORIGIN], window: pair.toolWindow, onRefused: (r) => toolRefused.push(r), ...(options.keys ? { keys: options.keys } : {}) });
   const mount: MountOptions = {
     frame: pair.frame,
     window: pair.hostWindow,
@@ -133,6 +137,7 @@ export async function launch(manifest: ToolManifest, options: LaunchOptions = {}
     onStorage: (call, result) => received.storage.push({ call, result }),
     onPractice: (m) => received.practice.push(m),
     onClose: (m) => received.closes.push(m),
+    onKey: (m) => received.keys.push(m),
     onRefused: (r) => received.refused.push(r),
     payloads: payloadChecks(manifest),
     // the first connection's channel is made up front (forge works before the hello); each later one is new

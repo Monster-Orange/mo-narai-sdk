@@ -73,6 +73,15 @@ describe("the harness", () => {
     expect(harness.events.map((e) => e.type)).toEqual(expect.arrayContaining(["tool.ready", "tool.answer", "tool.practice"]));
   });
 
+  it("tells the host of an Escape the tool left alone, and of none it kept (focus in the frame)", async () => {
+    await tool.locator("#keeps-escape").press("Escape");
+    await tool.locator("#text").press("Escape");
+    await until("tool.key");
+    await new Promise((r) => setTimeout(r, 200));
+    const keys = (await events()).filter((e) => e.type === "tool.key");
+    expect(keys).toEqual([expect.objectContaining({ ok: true, message: expect.objectContaining({ key: "Escape" }) })]);
+  });
+
   it("the SDK in the tool won't send a verdict", async () => {
     await tool.locator("#cheat").click();
     expect(await tool.locator("#error").textContent()).toMatch(/never a verdict/);

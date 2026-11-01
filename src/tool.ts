@@ -1,4 +1,4 @@
-import type { Answer, Command, CommandError, Connect, Hello, LocaleSwitch, Payload, Start, StateGet, StorageResult, Task, ToolMessage } from "./generated/envelope.js";
+import type { Answer, Command, CommandError, Connect, Hello, Key, LocaleSwitch, Payload, Start, StateGet, StorageResult, Task, ToolMessage } from "./generated/envelope.js";
 import type { ToolManifest } from "./generated/manifest.js";
 import { checkMessage, CONTRACT_VERSION, type PayloadCheck } from "./messages.js";
 import { CONNECT_TIMEOUT_MS, isDevHostOrigin, isDevHostname, NARAI_HOST_ORIGINS } from "./origins.js";
@@ -17,6 +17,23 @@ export interface ConnectOptions {
   timeoutMs?: number;
   /** For tests: the window the tool runs in. */
   window?: ToolWindow;
+  /** Where the learner's keys are heard: an Escape the tool leaves alone goes to Narai (tool.key), which closes the
+   *  dialog the tool is shown in. Default: the tool's window (none when `window` is a test's). */
+  keys?: KeyTarget;
+}
+
+/** What hears the tool's keydowns: its window. */
+export interface KeyTarget {
+  addEventListener(type: "keydown", listener: (event: KeyEventLike) => void): void;
+  removeEventListener(type: "keydown", listener: (event: KeyEventLike) => void): void;
+}
+
+export interface KeyEventLike {
+  readonly key: string;
+  readonly repeat?: boolean;
+  readonly isComposing?: boolean;
+  readonly keyCode?: number;
+  readonly defaultPrevented: boolean;
 }
 
 /** What the tool needs of its window: the connect arrives there, from its parent. */
@@ -75,6 +92,7 @@ export function connect(manifest: ToolManifest, options: ConnectOptions = {}): P
   const hosts = options.hostOrigins ?? NARAI_HOST_ORIGINS;
   const dev = isDevHostname(win.location?.hostname ?? "");
   const wait = options.timeoutMs ?? CONNECT_TIMEOUT_MS;
+  const keys = options.keys ?? (options.window ? undefined : (win as unknown as KeyTarget));
   return new Promise((resolve, reject) => {
     const timer = Number.isFinite(wait)
       ? setTimeout(() => { win.removeEventListener("message", onConnect); reject(new Error("Narai's host didn't connect")); }, wait)
@@ -87,7 +105,7 @@ export function connect(manifest: ToolManifest, options: ConnectOptions = {}): P
       if (!port) { refused({ reason: "a connect with no port", data: event.data }); return; }
       win.removeEventListener("message", onConnect);
       if (timer) clearTimeout(timer);
-      session(manifest, port, { onRefused: refused, payloads: options.payloads }).then(resolve, reject);
+      session(manifest, port, { onRefused: refused, payloads: options.payloads, keys }).then(resolve, reject);
     }
     win.addEventListener("message", onConnect);
     // listening now: say so to the parent, which answers with the port. The hello carries nothing, so any origin may
@@ -99,7 +117,8 @@ export function connect(manifest: ToolManifest, options: ConnectOptions = {}): P
 
 /** The session on a port the host handed over: the first message is the start; nothing else until it. */
 export function session(
-  manifest: ToolManifest, port: PortLike, options: { onRefused?: ((r: Refusal) => void) | undefined; payloads?: PayloadCheck | undefined } = {},
+  manifest: ToolManifest, port: PortLike,
+  options: { onRefused?: ((r: Refusal) => void) | undefined; payloads?: PayloadCheck | undefined; keys?: KeyTarget | undefined } = {},
 ): Promise<ToolSession> {
   const refused = options.onRefused ?? (() => undefined);
   let start: Start | undefined;
@@ -132,11 +151,23 @@ export function session(
     try { done = handler(command.payload, command); } catch (e) { fail(e); return; }
     Promise.resolve(done).then(() => answerCommand(command.id), fail);
   };
+  // An Escape the tool left alone: Narai's to act on (it closes the tool's dialog). Never another key, a repeat, or one
+  // that cancels an IME candidate; and only after the event's whole dispatch (a task), so a listener of the tool's that
+  // runs after this one can still keep it.
+  const onKey = (event: KeyEventLike) => {
+    if (event.key !== "Escape" || event.repeat || event.isComposing || event.keyCode === 229) return;
+    setTimeout(() => {
+      if (event.defaultPrevented || !start || channel.closed) return;
+      const key: Key = { type: "tool.key", v: CONTRACT_VERSION, launch: start.launch, key: "Escape" };
+      channel.send(key);
+    }, 0);
+  };
   return new Promise((resolve) => {
     channel.listen((message: ToolMessage) => {
       if (!start) {
         if (message.type !== "narai.tool.start") { refused({ reason: `${message.type} before the start`, data: message }); return; }
         start = message as Start;
+        options.keys?.addEventListener("keydown", onKey);
         resolve(api(start));
         return;
       }
@@ -178,7 +209,7 @@ export function session(
         channel.send(message);
       },
       practice: (activity, report) => channel.send({ ...base, type: "tool.practice", activity, ...report }),
-      close: (reason) => { channel.send({ ...base, type: "tool.close", reason }); channel.close(); },
+      close: (reason) => { channel.send({ ...base, type: "tool.close", reason }); channel.close(); options.keys?.removeEventListener("keydown", onKey); },
       onCommand: (command, handler) => {
         if (!manifest.commands?.[command]) throw new Error(`command ${command} isn't in the manifest`);
         commands.set(command, handler);
