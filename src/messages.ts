@@ -102,6 +102,7 @@ function byManifest(m: ToolManifest, message: ToolMessage, task: CheckContext["t
 }
 
 function checkStart(m: ToolManifest, message: Start): string | null {
+  if (message.subject && !m.surfaces.account_link) return "a subject, but the manifest declares no account linking (surfaces.account_link)";
   for (const g of message.granted ?? []) {
     if (m.capabilities?.[g] !== true) return `granted ${g}, which the manifest doesn't declare (capabilities.${g})`;
   }

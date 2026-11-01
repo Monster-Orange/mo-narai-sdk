@@ -31,6 +31,10 @@ export interface MountOptions {
   /** What the step lets the tool use for this launch. Only what the manifest declares (`capabilities`) goes to the tool;
    *  the rest is dropped, and the launch still starts, as Narai does. */
   granted?: readonly Grant[];
+  /** The learner's id with the tool's publisher, when the learner linked their account with it and chose to let its
+   *  tools know them (narai.tool.start's `subject`). It goes only to a tool whose manifest declares
+   *  `surfaces.account_link`; otherwise it's dropped, and the launch still starts, as Narai does. */
+  subject?: string;
   onReady?: (message: Ready) => void;
   onAnswer?: (message: Answer) => void;
   onPractice?: (message: Practice) => void;
@@ -210,6 +214,7 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
   if (options.preset) start.preset = options.preset;
   if (options.conventions) start.conventions = options.conventions;
   if (options.task) start.task = options.task;
+  if (options.subject && manifest.surfaces.account_link) start.subject = options.subject;
   const granted = (options.granted ?? []).filter((g) => manifest.capabilities?.[g] === true);
   if (granted.length) start.granted = [...new Set(granted)] as NonNullable<Start["granted"]>;
   let handed = false;
@@ -217,7 +222,7 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
     if (event.source !== options.frame || event.origin !== origin) return;
     const checked = checkMessage(manifest, event.data, { from: "tool" });
     if (!checked.ok || checked.message.type !== "tool.hello") return;
-    // a second hello from this frame at its origin is a reload (Ward, 2026-10-31): the old port is closed, so only one
+    // a second hello from this frame at its origin is a reload: the old port is closed, so only one
     // is ever live, and the tool gets a new one to the same launch (its storage kept, the start replayed)
     if (handed) { channel.close(); open(); channel.send(start); }
     handed = true;

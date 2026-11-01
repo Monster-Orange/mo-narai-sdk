@@ -68,6 +68,10 @@ export interface Start {
    * @maxItems 1
    */
   granted?: [] | ["microphone"];
+  /**
+   * The learner's id with this tool's publisher, the same for every tool it publishes, present only when the learner linked their account with the publisher and chose to let its tools know them. Never a name or an email.
+   */
+  subject?: string | null;
 }
 /**
  * A typed payload: `schema` names one the manifest declares for this message; the rest is that schema's.

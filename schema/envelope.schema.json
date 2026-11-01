@@ -560,6 +560,20 @@
           "maxItems": 1,
           "title": "Granted",
           "type": "array"
+        },
+        "subject": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9_-]{43}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The learner's id with this tool's publisher, the same for every tool it publishes, present only when the learner linked their account with the publisher and chose to let its tools know them. Never a name or an email.",
+          "title": "Subject"
         }
       },
       "required": [
