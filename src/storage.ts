@@ -32,7 +32,7 @@ export type FetchLike = (url: string, init: { method: string; headers?: Record<s
   Promise<{ status: number; json(): Promise<unknown> }>;
 
 /** A launch storage over Narai's API, GET/PUT/DELETE `/api/tools/launches/{launch}/storage/{key}`: a value (a stored
- *  null too), or no such key (404 not_found); quota (409); denied for a launch that is gone (404) or expired (410), and
+ *  null too), or no such key (204 with no body; 404 not_found from an older Narai); quota (409); denied for a launch that is gone (404) or expired (410), and
  *  for anything else the API refuses. For a host that may fetch: Narai's own host doesn't use it (its host document fetches
  *  nothing and hands storage to the lesson around it, as a HostStorage of its own). */
 export function httpStorage(options: { base: string; fetch?: FetchLike }): HostStorage {
@@ -52,6 +52,7 @@ export function httpStorage(options: { base: string; fetch?: FetchLike }): HostS
   return {
     get: async (launch, key) => {
       const res = await request("GET", launch, key);
+      if (res.status === 204) return { ok: false, error: "not_found" };
       if (res.status !== 200) return { ok: false, error: await failed(res) };
       return { ok: true, value: ((await res.json()) as { value?: unknown }).value ?? null };
     },

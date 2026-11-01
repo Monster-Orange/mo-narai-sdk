@@ -25,6 +25,12 @@ describe("httpStorage", () => {
     await expect(store.get("lch_testlaunch01", "gone")).resolves.toEqual({ ok: false, error: "not_found" });
   });
 
+  it("reads a key never kept, which Narai answers 204 with no body, as not_found", async () => {
+    const s = server({ [`GET ${at("new")}`]: { status: 204 } });
+    const store = httpStorage({ base: "https://michinar.ai", fetch: s.fetch });
+    await expect(store.get("lch_testlaunch01", "new")).resolves.toEqual({ ok: false, error: "not_found" });
+  });
+
   it("writes and deletes, and says quota or denied as the API does", async () => {
     const s = server({ [`PUT ${at("a")}`]: { status: 204 }, [`PUT ${at("b")}`]: { status: 409, body: { error: "quota" } },
       [`DELETE ${at("a")}`]: { status: 204 }, [`GET ${at("x")}`]: { status: 410, body: { error: "expired" } },

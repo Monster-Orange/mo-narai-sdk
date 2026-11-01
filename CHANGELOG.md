@@ -13,6 +13,8 @@ Nothing to change in a tool. A host that mounts tools: handle `onKey` (below) to
   repeat, and it isn't part of an IME composition (an Escape that cancels a candidate never closes anything). Escape
   is the only key. `mountTool({ onKey })` hears it, even before `tool.ready`; `ConnectOptions.keys` says where keys are
   heard (the tool's window by default), and the testing `launch()` takes `keys` and records `received.keys`.
+- `httpStorage`: a key the tool never kept is `not_found` when Narai answers 204 with no body, as it now does (an
+  older Narai's 404 `not_found` still is). It was `denied`. `schema/openapi.tools.json` declares the 204.
   `narai dev`'s harness logs it.
 
 ## 0.3.1
