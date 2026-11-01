@@ -1295,7 +1295,7 @@
     "/api/tools/launches/{launch}/storage/{key}": {
       "get": {
         "summary": "Storage Get",
-        "description": "A key the tool kept in this launch.",
+        "description": "A key the tool kept in this launch; 204, no body, when it kept none.",
         "operationId": "storage_get_api_tools_launches__launch__storage__key__get",
         "parameters": [
           {
@@ -1329,6 +1329,9 @@
                 }
               }
             }
+          },
+          "204": {
+            "description": "No such key in this launch (not an error)"
           },
           "422": {
             "description": "Validation Error",
