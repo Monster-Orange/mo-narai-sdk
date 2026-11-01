@@ -72,8 +72,13 @@ on one origin, the origin of your client metadata document.
 - `webhook`: where Narai posts `account.unlinked` when a link ends (section 6).
 
 `defineTool()`'s schema checks the shape, and `manifestProblems()` (what `narai validate` runs) also refuses three
-URLs that aren't on one origin, as Narai's registry does. Narai accepts your client for links once a reviewed version of one of your tools declares it. Before that, a
-draft's declaration works for your publisher's own members, so you can link your own account while you build.
+URLs that aren't on one origin, as Narai's registry does.
+
+Once a version of one of your tools that declares it has passed Narai's tool review, your client links any learner.
+There is no separate review for account linking. Before that, a draft's declaration works for your publisher's own
+members: push a draft with `account_link` and link your own Narai account while you build. The same goes for the
+subject on a tool's start: it needs only the launched version to declare `account_link`, and a draft launches for
+your members only.
 
 ## 3. Sign in with Narai
 
@@ -200,9 +205,10 @@ and `name` and `email` under their scopes. For an ended link, it answers 401.
 
 ## 4. Your "Connect Narai" page
 
-`surfaces.account_link.url` is the page on your site where a learner starts linking: sign them in to your own
-account first, then send them through the authorization request. On your callback, store the subject on their
-account: that's the link, on your side.
+Linking starts on your site. `surfaces.account_link.url` is the page where a learner starts it: sign them in to
+your own account first, then send them through the authorization request. On your callback, store the subject on
+their account: that's the link, on your side. Today Narai doesn't link to this page itself, so put your own
+"Connect Narai" where your learners will find it.
 
 ## 5. The subject in your tools
 
@@ -237,8 +243,8 @@ a JWT whose header has `typ: account-unlinked+jwt` and `alg: ES256`. Its claims:
 | `event` | `"account.unlinked"` |
 
 It carries no name and no email. Verify it with the same JWKS, then end the link on your side (forget the subject on
-that account) and answer with any 2xx. Any other answer, or none in 10 seconds, is retried: an event can arrive more
-than once, so dedupe by `jti`.
+that account) and answer with any 2xx. Any other answer, or none in 10 seconds, is retried with backoff for a few
+minutes. An event is delivered at least once, so it can arrive more than once: dedupe by `jti` (the link's id).
 
 ```js
 export async function unlinked(body) {
