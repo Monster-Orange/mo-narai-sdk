@@ -7,6 +7,7 @@ try { void window.parent.document.title; $("isolated").textContent = "can reach 
 const manifest = await (await fetch("./manifest.json")).json();
 const tool = await connect(manifest, { hostOrigins: ["https://michinar.ai"] });
 $("prompt").textContent = tool.task?.prompt ?? "free practice";
+$("subject").textContent = tool.start.subject ?? "none";
 tool.onCommand("highlight", (payload) => { $("highlighted").textContent = payload.word; });
 tool.ready(tool.start.locale);
 

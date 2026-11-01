@@ -3,6 +3,17 @@
 0.x: the contract (the manifest, the wire, the registry's API) can still change between minor versions; this file says
 how. A version's entry lists what a tool or a host has to change, first.
 
+## 0.3.4
+
+Nothing to change in a tool or a host.
+
+- `startHarness({ subject })` (`narai dev --subject`, in the CLI that pins this version): the harness starts the tool as
+  Narai does for a learner who linked their account with the tool's publisher and chose to let its tools know them.
+  As in a lesson, only a manifest that declares `surfaces.account_link` gets it; any other drops it and still starts.
+- The harness's events include the start it sent (`narai.tool.start`, `out`), so a run shows what the tool was started
+  with, again on every reload.
+- `mountTool({ onStart })`: the start as it goes to the tool, once and on every reload.
+
 ## 0.3.3
 
 Nothing to change in a tool. A host that mounts tools: pass `subject` to `mountTool` when Narai's launch carries one.

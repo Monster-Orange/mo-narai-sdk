@@ -48,6 +48,8 @@ export interface MountOptions {
   onStorage?: (call: StorageGet | StorageSet | StorageDelete, result: StorageResult) => void;
   /** Every command as it goes to the tool, with its id. */
   onCommandSent?: (message: Command) => void;
+  /** The start as it goes to the tool: once, and again on every reload. */
+  onStart?: (message: Start) => void;
   /** Every answer the tool gives a command (tool.command.ack or tool.command.error), whoever sent the command. */
   onCommandAnswer?: (message: CommandAck | CommandError) => void;
   /** The tool's state (tool.state): on every change, and in answer to requestState(). */
@@ -217,6 +219,7 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
   if (options.subject && manifest.surfaces.account_link) start.subject = options.subject;
   const granted = (options.granted ?? []).filter((g) => manifest.capabilities?.[g] === true);
   if (granted.length) start.granted = [...new Set(granted)] as NonNullable<Start["granted"]>;
+  const sendStart = () => { options.onStart?.(start); channel.send(start); };
   let handed = false;
   const onHello = (event: HelloEvent) => {
     if (event.source !== options.frame || event.origin !== origin) return;
@@ -224,14 +227,14 @@ export function mountTool(manifest: ToolManifest, options: MountOptions): HostSe
     if (!checked.ok || checked.message.type !== "tool.hello") return;
     // a second hello from this frame at its origin is a reload: the old port is closed, so only one
     // is ever live, and the tool gets a new one to the same launch (its storage kept, the start replayed)
-    if (handed) { channel.close(); open(); channel.send(start); }
+    if (handed) { channel.close(); open(); sendStart(); }
     handed = true;
     const connect: Connect = { type: "narai.tool.connect", v: CONTRACT_VERSION };
     options.frame.postMessage(connect, origin, [port2]);
   };
   win.addEventListener("message", onHello);
   open();
-  channel.send(start);
+  sendStart();
   return {
     command: (command, payload) => {
       const id = nextId("cmd");
