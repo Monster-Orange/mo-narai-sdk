@@ -449,6 +449,96 @@
         }
       }
     },
+    "/api/tools/{publisher}/account-link": {
+      "get": {
+        "summary": "Account Link",
+        "description": "The publisher's account linking: what its versions declare, how many learners are linked, and how its webhook\ntakes the account.unlinked event. Counts only.",
+        "operationId": "account_link_api_tools__publisher__account_link_get",
+        "parameters": [
+          {
+            "name": "publisher",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Publisher"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountLinkOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
     "/api/tools/{publisher}/{name}": {
       "get": {
         "summary": "Get Tool",
@@ -1085,6 +1175,302 @@
         }
       }
     },
+    "/api/tools/{publisher}/{name}/dev-origin": {
+      "put": {
+        "summary": "Set Dev Origin",
+        "description": "The caller's own dev server for this tool, for a while: their own lesson launches of a draft of it frame it.",
+        "operationId": "set_dev_origin_api_tools__publisher___name__dev_origin_put",
+        "parameters": [
+          {
+            "name": "publisher",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Publisher"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevOriginIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevOriginOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      },
+      "get": {
+        "summary": "Get Dev Origin",
+        "description": "The caller's live dev server origin for this tool, or 204 when there is none.",
+        "operationId": "get_dev_origin_api_tools__publisher___name__dev_origin_get",
+        "parameters": [
+          {
+            "name": "publisher",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Publisher"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevOriginOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Dev Origin",
+        "description": "The caller's dev server origin for this tool ends now.",
+        "operationId": "delete_dev_origin_api_tools__publisher___name__dev_origin_delete",
+        "parameters": [
+          {
+            "name": "publisher",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Publisher"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
     "/api/tools/{publisher}/{name}/versions/{version}/launches": {
       "post": {
         "summary": "Launch",
@@ -1443,6 +1829,31 @@
   },
   "components": {
     "schemas": {
+      "AccountLinkOut": {
+        "properties": {
+          "publisher": {
+            "type": "string",
+            "title": "Publisher"
+          },
+          "declared": {
+            "$ref": "#/components/schemas/LinkDeclared"
+          },
+          "links": {
+            "$ref": "#/components/schemas/LinkCounts"
+          },
+          "webhook": {
+            "$ref": "#/components/schemas/LinkWebhook"
+          }
+        },
+        "type": "object",
+        "required": [
+          "publisher",
+          "declared",
+          "links",
+          "webhook"
+        ],
+        "title": "AccountLinkOut"
+      },
       "CiTokenIn": {
         "properties": {
           "label": {
@@ -1659,6 +2070,54 @@
         ],
         "title": "CiTokensOut"
       },
+      "DevOriginIn": {
+        "properties": {
+          "origin": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Origin",
+            "description": "https://localhost:<port>, a loopback address, or a tunnel host"
+          },
+          "ttl_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 86400.0,
+                "minimum": 60.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl Seconds",
+            "description": "8 hours when absent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "origin"
+        ],
+        "title": "DevOriginIn"
+      },
+      "DevOriginOut": {
+        "properties": {
+          "origin": {
+            "type": "string",
+            "title": "Origin"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "origin",
+          "expires_at"
+        ],
+        "title": "DevOriginOut"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1709,6 +2168,156 @@
           "expires_at"
         ],
         "title": "LaunchOut"
+      },
+      "LinkCounts": {
+        "properties": {
+          "live": {
+            "type": "integer",
+            "title": "Live",
+            "description": "learners linked now"
+          }
+        },
+        "type": "object",
+        "required": [
+          "live"
+        ],
+        "title": "LinkCounts"
+      },
+      "LinkDeclaration": {
+        "properties": {
+          "tool": {
+            "type": "string",
+            "title": "Tool",
+            "description": "publisher/name: the tool whose version declares it"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "client_id": {
+            "type": "string",
+            "title": "Client Id"
+          },
+          "webhook": {
+            "type": "string",
+            "title": "Webhook"
+          },
+          "one_origin": {
+            "type": "boolean",
+            "title": "One Origin",
+            "description": "url, client_id and webhook share one origin, as linking requires"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool",
+          "version",
+          "url",
+          "client_id",
+          "webhook",
+          "one_origin"
+        ],
+        "title": "LinkDeclaration"
+      },
+      "LinkDeclared": {
+        "properties": {
+          "reviewed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LinkDeclaration"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the newest reviewed version's: the one learners link with"
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LinkDeclaration"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "a draft newer than it that declares one, not yet in use"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reviewed",
+          "draft"
+        ],
+        "title": "LinkDeclared"
+      },
+      "LinkWebhook": {
+        "properties": {
+          "last_outcome": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "delivered",
+                  "retrying",
+                  "undelivered"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Outcome",
+            "description": "the newest try of an account.unlinked event"
+          },
+          "last_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last At"
+          },
+          "retrying": {
+            "type": "integer",
+            "title": "Retrying",
+            "description": "events that failed and will be tried again"
+          },
+          "undelivered": {
+            "type": "integer",
+            "title": "Undelivered",
+            "description": "events given up on after the last try"
+          },
+          "last_undelivered_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Undelivered At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "last_outcome",
+          "last_at",
+          "retrying",
+          "undelivered",
+          "last_undelivered_at"
+        ],
+        "title": "LinkWebhook"
       },
       "PublisherIn": {
         "properties": {

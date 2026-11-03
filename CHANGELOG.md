@@ -3,6 +3,18 @@
 0.x: the contract (the manifest, the wire, the registry's API) can still change between minor versions; this file says
 how. A version's entry lists what a tool or a host has to change, first.
 
+## 0.3.5
+
+Nothing to change in a tool or a host.
+
+- The registry's API (`schema/openapi.tools.json`) adds a developer's dev server for a tool:
+  `PUT|GET|DELETE /api/tools/{publisher}/{name}/dev-origin`. Your own launches of a draft then frame it in a real
+  lesson ([docs/dev-in-a-lesson.md](docs/dev-in-a-lesson.md)). It also adds a publisher's account linking as the
+  registry reads it, `GET /api/tools/{publisher}/account-link`.
+- `@michinarai/sdk/harness` exports `framedPath(manifest)`, the path Narai frames a dev server at, and
+  `toolFiles(manifest, dir, { launch })`, a request handler serving the built files there (`narai dev --launch`, in
+  the CLI that pins this version). The harness serves through it, at the same paths as before.
+
 ## 0.3.4
 
 Nothing to change in a tool or a host.

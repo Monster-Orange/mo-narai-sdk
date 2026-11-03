@@ -15,6 +15,8 @@ is, unless the learner linked their account with the tool's publisher and chose 
   `narai tools push`. The steps are the CLI's
   [Getting access](https://github.com/Monster-Orange/mo-narai-cli#getting-access). Building and the local harness need
   no account.
+- **Try it in a real lesson:** your dev server, framed in your own lessons while you change the tool:
+  [Your dev server in a real lesson](https://github.com/Monster-Orange/mo-narai-sdk/blob/main/docs/dev-in-a-lesson.md).
 - **Link accounts:** a publisher with accounts of its own can let learners link them, and offer Sign in with Narai:
   [Account linking](https://github.com/Monster-Orange/mo-narai-sdk/blob/main/docs/account-linking.md).
 - **Read real ones:** [mo-narai-labs](https://github.com/Monster-Orange/mo-narai-labs), Narai's own tools (a fretboard,
